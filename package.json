@@ -6,6 +6,8 @@
   "scripts": {
     "start": "python3 server/ammocode-serve.py",
     "serve": "python3 server/ammocode-serve.py",
+    "executable": "python3 ammocode.py",
+    "build": "bash scripts/build-executable.sh",
     "collab": "python3 server/ammocode-collab.py",
     "invite": "python3 server/ammocode-collab.py --invite"
   },

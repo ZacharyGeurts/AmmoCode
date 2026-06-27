@@ -46,6 +46,12 @@ server/ammocode-field-control.py   — defield SG
 - `data/ammocode-network-doctrine.json` — polite discovery
 - `data/ammocode-version.json` — 4.9 upload / 5.0 distro
 
+## Distribution model
+
+- **Executable:** single secured binary (`npm run build` → `dist/ammocode`) — immutable at runtime, **replace file only** to upgrade
+- **Settings:** `~/.config/ammocode/ammocode-settings.secure.json` — HMAC-signed, schema migrates on every run when options added/removed
+- **API:** `settings_load`, `settings_save`, `settings_status`
+
 ## Known limits (call out in review)
 
 - HTTP tunnel queue is in-memory (not persistent across restart)

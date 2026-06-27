@@ -12,18 +12,21 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from ammocode_runtime import bundle_root, is_frozen, settings_dir  # noqa: E402
+from ddos_guard import GUARD  # noqa: E402
+
+ROOT = bundle_root()
 GROK16 = Path(os.environ.get("GROK16_ROOT", ROOT.parent / "Grok16"))
 PORT = int(os.environ.get("AMMOCODE_PORT", "9555"))
-sys.path.insert(0, str(ROOT / "server"))
-
-from ddos_guard import GUARD  # noqa: E402
 
 _collab_mod: Any | None = None
 _znetwork_mod: Any | None = None
 _network_mod: Any | None = None
 _security_mod: Any | None = None
 _field_mod: Any | None = None
+_settings_mod: Any | None = None
 _VERSION_CACHE: dict[str, Any] | None = None
 
 
@@ -83,6 +86,10 @@ def _security_mgr() -> Any | None:
 
 def _field_control() -> Any | None:
     return _load_server_module("_field_mod", "ammocode_field_control", "ammocode-field-control.py")
+
+
+def _settings() -> Any | None:
+    return _load_server_module("_settings_mod", "ammocode_settings", "ammocode-settings.py")
 
 
 def _start_znetwork_hook() -> None:
@@ -364,7 +371,36 @@ class Handler(SimpleHTTPRequestHandler):
                 "ddos_guard": GUARD.status(),
                 "znetwork": zst.get("znetwork") if zst.get("ok") else zst,
                 "shield": zst.get("shield") if zst.get("ok") else None,
+                "frozen": is_frozen(),
+                "replacement_only": True,
+                "distribution": _load_json(ROOT / "data" / "ammocode-distribution-doctrine.json", {}),
             })
+            return
+
+        if action in ("settings_load", "settings_get"):
+            st = _settings()
+            if st and hasattr(st, "load_settings"):
+                imp = body.get("import_local") if isinstance(body.get("import_local"), dict) else None
+                _json(self, 200, st.load_settings(import_local=imp))
+                return
+            _json(self, 503, {"ok": False, "error": "settings_unavailable"})
+            return
+
+        if action in ("settings_save", "settings_patch"):
+            st = _settings()
+            if st and hasattr(st, "save_settings"):
+                patch = body.get("patch") if isinstance(body.get("patch"), dict) else body.get("settings") or {}
+                _json(self, 200, st.save_settings(patch))
+                return
+            _json(self, 503, {"ok": False, "error": "settings_unavailable"})
+            return
+
+        if action in ("settings_status", "distribution_status"):
+            st = _settings()
+            if st and hasattr(st, "settings_status"):
+                _json(self, 200, st.settings_status())
+                return
+            _json(self, 503, {"ok": False, "error": "settings_unavailable"})
             return
 
         if action in ("znetwork_status", "znetwork", "shield_status"):
@@ -726,6 +762,7 @@ class Handler(SimpleHTTPRequestHandler):
             "network_beacon", "network_discover", "network_status", "host_evaluate",
             "tunnel_register", "tunnel_poll", "tunnel_send", "tunnel_deliver", "tunnel_connect",
             "network_friend_add", "network_block_add",
+            "settings_load", "settings_save", "settings_status",
         ]})
 
     def log_message(self, fmt: str, *args) -> None:
@@ -749,12 +786,28 @@ def main() -> int:
                 )
         except Exception as exc:
             sys.stderr.write(f"auto-defield: {exc}\n")
+    st = _settings()
+    if st and hasattr(st, "load_settings"):
+        try:
+            mig = st.load_settings()
+            if mig.get("migrated"):
+                sys.stderr.write(
+                    f"AmmoCode: settings migrated → schema {mig.get('schema_version')} "
+                    f"({mig.get('path')})\n",
+                )
+        except Exception as exc:
+            sys.stderr.write(f"settings migrate: {exc}\n")
     _start_collab_thread()
     _start_znetwork_hook()
     srv = ThreadingHTTPServer((host, PORT), Handler)
     collab_port = os.environ.get("AMMOCODE_COLLAB_PORT", "9556")
     ver = _version_info()
-    print(f"AmmoCode {ver['codename']} — upload {ver['upload_version']} · distro {ver['distro_version']}", flush=True)
+    mode = "secured executable" if is_frozen() else "dev tree"
+    print(f"AmmoCode {ver['codename']} — upload {ver['upload_version']} · distro {ver['distro_version']} ({mode})", flush=True)
+    if st and hasattr(st, "settings_path"):
+        print(f"  settings {st.settings_path()} (signed, replace-exe-only)", flush=True)
+    else:
+        print(f"  settings {settings_dir()} (signed)", flush=True)
     print(f"  gui  http://{host}:{PORT}/", flush=True)
     print(f"  tab  http://{host}:{PORT}/tab.html", flush=True)
     print(f"  api  http://{host}:{PORT}/api/ammocode", flush=True)

@@ -1,0 +1,28 @@
+{
+  "schema": "ammocode-settings-schema/v1",
+  "schema_version": 1,
+  "settings_version": "4.9.0",
+  "title": "AmmoCode secured settings — canonical keys for migration",
+  "motto": "Options added or removed migrate automatically on run",
+  "groups": {
+    "editor": ["fontSize", "tabSize", "wordWrap", "autodetect", "profile", "theme", "tabAging"],
+    "collab": ["collabName", "collabCursorId", "collabInvite", "collabMuted", "collabVolume"],
+    "files": ["fileDisableAging"]
+  },
+  "options": {
+    "fontSize": { "type": "integer", "default": 13, "min": 10, "max": 28 },
+    "tabSize": { "type": "integer", "default": 4, "min": 2, "max": 8 },
+    "wordWrap": { "type": "boolean", "default": false },
+    "autodetect": { "type": "boolean", "default": true },
+    "profile": { "type": "string", "default": "belt_2_0" },
+    "theme": { "type": "string", "default": "ammo_emerald" },
+    "tabAging": { "type": "boolean", "default": true },
+    "collabName": { "type": "string", "default": "coder", "maxLength": 32 },
+    "collabCursorId": { "type": "string", "default": "arrow_emerald" },
+    "collabInvite": { "type": "string", "default": "" },
+    "collabMuted": { "type": "boolean", "default": false },
+    "collabVolume": { "type": "number", "default": 0.8, "min": 0, "max": 1 },
+    "fileDisableAging": { "type": "object", "default": {} }
+  },
+  "deprecated": {}
+}

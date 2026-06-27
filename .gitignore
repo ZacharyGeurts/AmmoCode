@@ -5,3 +5,7 @@ __pycache__/
 .env
 *.marker
 data/*.tmp
+dist/
+build/
+*.spec
+ammocode-settings.key
