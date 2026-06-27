@@ -190,17 +190,9 @@ def _json(handler: SimpleHTTPRequestHandler, code: int, doc: dict[str, Any]) -> 
 
 
 def _field_posture(surface: str = "") -> dict[str, Any]:
-    instill = GROK16 / "lib" / "g16-ammocode-field-instill.py"
-    if instill.is_file():
-        try:
-            proc = subprocess.run(
-                [sys.executable, str(instill), "posture", surface or "plain"],
-                capture_output=True, text=True, timeout=8,
-            )
-            if proc.returncode == 0 and proc.stdout.strip():
-                return json.loads(proc.stdout)
-        except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
-            pass
+    fc = _field_control()
+    if fc and hasattr(fc, "ammocode_posture"):
+        return fc.ammocode_posture(str(surface or "plain"))
     doc = _load_json(ROOT / "data" / "ammocode-field-doctrine.json")
     pol = doc.get("policy") or {}
     surf = str(surface or "plain").lower()
@@ -354,11 +346,15 @@ class Handler(SimpleHTTPRequestHandler):
             zn = _znetwork()
             zst = zn.status() if zn and hasattr(zn, "status") else {"ok": False}
             ver = _version_info()
+            fc = _field_control()
+            fpos = fc.ammocode_posture() if fc and hasattr(fc, "ammocode_posture") else _field_posture()
             _json(self, 200, {
                 "ok": True, "pong": True,
                 "ammocode": True,
                 **ver,
                 "version": ver["upload_version"],
+                "ammocode_field": fpos,
+                "defield_active": bool(fc and hasattr(fc, "is_defielded") and fc.is_defielded()),
                 "compiler_gui_2027": True,
                 "grok16": (GROK16 / "bin" / "g16").is_file(),
                 "universal": bool(uni),
@@ -744,7 +740,13 @@ def main() -> int:
         try:
             out = fc.auto_defield_if_fielded()
             if out.get("defielded"):
-                sys.stderr.write(f"AmmoCode: auto-defielded SG/Grok16 ({out.get('receipt', {}).get('reason')})\n")
+                why = out.get("receipt", {}).get("reason", "")
+                was_ac = out.get("receipt", {}).get("ammocode_was_fielded")
+                sys.stderr.write(
+                    f"AmmoCode: auto-defielded"
+                    f"{' (AmmoCode was fielded)' if was_ac else ''}"
+                    f" — {why}\n",
+                )
         except Exception as exc:
             sys.stderr.write(f"auto-defield: {exc}\n")
     _start_collab_thread()

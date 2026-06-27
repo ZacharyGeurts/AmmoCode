@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SG / Grok16 field control — detect fielded posture and defield safely."""
+"""AmmoCode + SG field control — detect fielded posture and defield safely."""
 from __future__ import annotations
 
 import json
@@ -38,14 +38,21 @@ def _save_json(path: Path, doc: Any) -> None:
     tmp.replace(path)
 
 
-def _grok16_posture() -> dict[str, Any]:
+def is_defielded() -> bool:
+    return DEFIELD_MARKER.is_file()
+
+
+def _grok16_posture(surface: str = "plain") -> dict[str, Any]:
     instill = GROK16 / "lib" / "g16-ammocode-field-instill.py"
     if not instill.is_file():
         return {"posture": "unknown", "field": False}
+    env = os.environ.copy()
+    if is_defielded():
+        env["G16_AMMOCODE_RESTING_ON_FIELD"] = "1"
     try:
         proc = subprocess.run(
-            [sys.executable, str(instill), "posture", "plain"],
-            capture_output=True, text=True, timeout=8,
+            [sys.executable, str(instill), "posture", surface or "plain"],
+            capture_output=True, text=True, timeout=8, env=env,
         )
         if proc.returncode == 0 and proc.stdout.strip():
             return json.loads(proc.stdout)
@@ -54,21 +61,53 @@ def _grok16_posture() -> dict[str, Any]:
     return {"posture": "unknown", "field": False}
 
 
+def _defield_posture(*, reason: str = "defield_active") -> dict[str, Any]:
+    return {
+        "posture": "defield",
+        "field": False,
+        "no_subfields": True,
+        "resting_on_field": True,
+        "defield_active": True,
+        "reason": reason,
+    }
+
+
+def ammocode_posture(surface: str = "plain") -> dict[str, Any]:
+    """Effective AmmoCode runtime posture — defield marker wins over instill field."""
+    if is_defielded():
+        return _defield_posture()
+    pos = _grok16_posture(surface)
+    doc = _load_json(ROOT / "data" / "ammocode-field-doctrine.json", {})
+    pol = doc.get("policy") or {}
+    surf = str(surface or "plain").lower()
+    resting = surf in set((doc.get("surfaces") or {}).get("field") or [])
+    if resting and pol.get("defield_if_resting_on_field", True):
+        return _defield_posture(reason="resting_on_field")
+    return pos
+
+
+def ammocode_is_fielded(surface: str = "plain") -> bool:
+    if is_defielded():
+        return False
+    pos = ammocode_posture(surface)
+    return bool(pos.get("field")) and str(pos.get("posture") or "") == "field"
+
+
 def sg_field_status() -> dict[str, Any]:
-    """Detect whether SG / Grok16 / NEXUS field stack is actively fielded."""
+    """Detect whether SG / Grok16 / NEXUS or AmmoCode itself is actively fielded."""
     signals: list[dict[str, Any]] = []
-    fielded = False
+    sg_fielded = False
 
     if ZNET_MARKER.is_file():
-        fielded = True
+        sg_fielded = True
         signals.append({"id": "znetwork_running_marker", "active": True})
     if ZNET_SOCK.exists():
-        fielded = True
+        sg_fielded = True
         signals.append({"id": "znetwork_field_sock", "active": True})
 
     attach = _load_json(STATE / "ammocode-znetwork-attach.json", {})
     if attach.get("znetwork_running"):
-        fielded = True
+        sg_fielded = True
         signals.append({"id": "ammocode_znetwork_running", "active": True})
     if attach.get("detail") == "startup_with_us" and attach.get("interfered"):
         signals.append({"id": "ammocode_field_startup_attempt", "active": True, "fielded_hint": True})
@@ -76,15 +115,20 @@ def sg_field_status() -> dict[str, Any]:
     rt = _load_json(FIELD_RUNTIME, {})
     if rt.get("updated"):
         signals.append({"id": "field_combinatorics_runtime", "active": True, "updated": rt.get("updated")})
-        fielded = True
+        sg_fielded = True
 
     if FIELD_DRIVE.is_dir() and any(FIELD_DRIVE.rglob("nexus-field")):
         signals.append({"id": "nexus_field_drive_mirror", "active": True})
-        fielded = True
+        sg_fielded = True
 
-    posture = _grok16_posture()
-    if posture.get("field") and posture.get("posture") == "field":
-        signals.append({"id": "grok16_ammocode_posture_field", "active": True})
+    instill = _grok16_posture()
+    ac_posture = ammocode_posture()
+    ammocode_fielded = ammocode_is_fielded()
+    fielded = sg_fielded or ammocode_fielded
+    if ammocode_fielded:
+        signals.append({"id": "ammocode_posture_field", "active": True, "posture": ac_posture.get("posture")})
+    elif instill.get("field") and instill.get("posture") == "field":
+        signals.append({"id": "grok16_instill_field", "active": True, "fielded_hint": True})
 
     defield_active = DEFIELD_MARKER.is_file()
     doc = _load_json(DEFIELD_JSON, {})
@@ -92,18 +136,22 @@ def sg_field_status() -> dict[str, Any]:
     return {
         "ok": True,
         "fielded": fielded and not defield_active,
+        "ammocode_fielded": ammocode_fielded and not defield_active,
+        "sg_fielded": sg_fielded and not defield_active,
         "defield_active": defield_active,
         "signals": signals,
-        "grok16_posture": posture,
+        "ammocode_posture": ac_posture,
+        "grok16_posture": instill,
         "defield": doc,
-        "motto": "Resting on field → defield. No subfields.",
+        "motto": "AmmoCode or SG fielded → defield. No subfields.",
     }
 
 
 def defield_sg(*, reason: str = "operator_request", force: bool = False) -> dict[str, Any]:
-    """Defield SG/Grok16 — stop field-on-field, block re-field until cleared."""
+    """Defield SG/Grok16 and AmmoCode runtime — stop field-on-field until cleared."""
     before = sg_field_status()
-    if not force and not before.get("fielded") and before.get("defield_active"):
+    needs = before.get("fielded") or before.get("ammocode_fielded")
+    if not force and not needs and before.get("defield_active"):
         return {"ok": True, "already_defielded": True, "status": before}
 
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -114,9 +162,12 @@ def defield_sg(*, reason: str = "operator_request", force: bool = False) -> dict
         "posture": "defield",
         "no_subfields": True,
         "resting_on_field": True,
+        "ammocode_defielded": True,
+        "sg_defielded": True,
         "reason": reason,
         "ts": ts,
         "signals_before": before.get("signals") or [],
+        "ammocode_was_fielded": before.get("ammocode_fielded"),
     }
     try:
         STATE.mkdir(parents=True, exist_ok=True)
@@ -151,10 +202,6 @@ def defield_sg(*, reason: str = "operator_request", force: bool = False) -> dict
     }
 
 
-def is_defielded() -> bool:
-    return DEFIELD_MARKER.is_file()
-
-
 def clear_defield() -> dict[str, Any]:
     removed = []
     for path in (DEFIELD_MARKER, DEFIELD_JSON, STATE / "ammocode-defield.env"):
@@ -169,6 +216,10 @@ def clear_defield() -> dict[str, Any]:
 
 def auto_defield_if_fielded() -> dict[str, Any]:
     st = sg_field_status()
-    if st.get("fielded"):
+    if st.get("fielded") or st.get("ammocode_fielded"):
         return defield_sg(reason="auto_on_ammocode_boot", force=True)
-    return {"ok": True, "action": "none", "fielded": False, "status": st}
+    return {"ok": True, "action": "none", "fielded": False, "ammocode_fielded": False, "status": st}
+
+
+def field_posture_for_api(surface: str = "plain") -> dict[str, Any]:
+    return ammocode_posture(surface)

@@ -10,6 +10,7 @@
     "subfields_forbidden": true,
     "max_field_depth": 0,
     "defield_if_resting_on_field": true,
+    "defield_if_ammocode_fielded": true,
     "field_on_field_forbidden": true
   },
   "postures": {
