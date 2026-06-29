@@ -14,6 +14,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SG = Path(os.environ.get("SG_ROOT", ROOT.parent))
+ND = ROOT / "server" / "ammocode-nondestructive.py"
 
 
 def _resolve_nexus() -> Path:
@@ -32,6 +33,7 @@ PROFILE = os.environ.get("G16_BENCH_PROFILE", "belt_2_0")
 
 _uni: Any | None = None
 _ft: Any | None = None
+_nd: Any | None = None
 
 
 def _import_py(path: Path, name: str) -> Any | None:
@@ -60,6 +62,13 @@ def filetypes() -> Any | None:
     return _ft
 
 
+def nondestructive() -> Any | None:
+    global _nd
+    if _nd is None:
+        _nd = _import_py(ND, "ammocode_nd")
+    return _nd
+
+
 def _json(handler: SimpleHTTPRequestHandler, code: int, doc: dict) -> None:
     body = json.dumps(doc, ensure_ascii=False).encode("utf-8")
     handler.send_response(code)
@@ -71,24 +80,23 @@ def _json(handler: SimpleHTTPRequestHandler, code: int, doc: dict) -> None:
 
 
 def _safe_read(path: str) -> dict[str, Any]:
+    nd = nondestructive()
+    if nd and hasattr(nd, "assert_read"):
+        blocked = nd.assert_read(path)
+        if blocked:
+            return blocked
     p = Path(path).expanduser().resolve()
     if not p.is_file():
         return {"ok": False, "error": "not_found"}
-    allowed_roots = [
-        Path.home(),
-        SG.resolve(),
-        NEXUS.resolve(),
-        Path("/tmp"),
-    ]
-    if not any(str(p).startswith(str(r)) for r in allowed_roots):
-        return {"ok": False, "error": "path_forbidden"}
+    ft = filetypes()
+    if ft and hasattr(ft, "read_text_file"):
+        return ft.read_text_file(str(p))
     try:
         text = p.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
         return {"ok": False, "error": str(exc)}
-    ft = filetypes()
     lang = ft.discern(str(p)) if ft else "plaintext"
-    return {"ok": True, "path": str(p), "content": text, "language": lang, "size": len(text)}
+    return {"ok": True, "path": str(p), "content": text, "language": lang, "size": len(text), "encoding": "utf-8", "era": "modern"}
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -164,6 +172,12 @@ class Handler(SimpleHTTPRequestHandler):
             return
 
         action = str(body.get("action") or "").lower()
+        nd = nondestructive()
+        if nd and hasattr(nd, "assert_api_action"):
+            blocked = nd.assert_api_action(action)
+            if blocked:
+                _json(self, 403, blocked)
+                return
         path = str(body.get("path") or "")
         content = str(body.get("content") or "")
         lang = str(body.get("language") or body.get("lang") or "")
@@ -176,15 +190,17 @@ class Handler(SimpleHTTPRequestHandler):
             vp = ROOT / "data" / "ammocode-version.json"
             if vp.is_file():
                 ver = json.loads(vp.read_text(encoding="utf-8"))
+            nd_doc = nd.status() if nd and hasattr(nd, "status") else {"nondestructive": True}
             _json(self, 200, {
                 "ok": True,
                 "ammocode": True,
                 "stack": True,
                 "codename": ver.get("codename", "Stack"),
-                "version": ver.get("distro_version", "6.0.0"),
+                "version": ver.get("distro_version", "6.1.0"),
                 "grok16": (GROK16 / "bin" / "g16").is_file(),
                 "filetypes_db": (NEXUS / "data" / "field-programming-filetypes.json").is_file(),
                 "extensions": len(json.loads((NEXUS / "data" / "field-programming-filetypes.json").read_text()).get("extensions", {})) if (NEXUS / "data" / "field-programming-filetypes.json").is_file() else 0,
+                **{k: v for k, v in nd_doc.items() if k != "ok"},
             })
             return
 
@@ -215,6 +231,11 @@ class Handler(SimpleHTTPRequestHandler):
             return
 
         if action in ("g16_run", "run"):
+            if path and nd and hasattr(nd, "assert_run"):
+                blocked = nd.assert_run(path)
+                if blocked:
+                    _json(self, 403, blocked)
+                    return
             if path and ft:
                 _json(self, 200, ft.run_path(path, profile=profile))
                 return

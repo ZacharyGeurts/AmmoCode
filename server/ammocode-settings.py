@@ -13,6 +13,9 @@ from typing import Any
 
 from ammocode_runtime import bundle_root, executable_dir, is_frozen, settings_dir
 
+ND_PATH = bundle_root() / "server" / "ammocode-nondestructive.py"
+_nd_mod: Any | None = None
+
 SCHEMA_PATH = bundle_root() / "data" / "ammocode-settings-schema.json"
 SETTINGS_FILE = os.environ.get("AMMOCODE_SETTINGS_FILE", "").strip()
 KEY_FILE = "ammocode-settings.key"
@@ -29,7 +32,33 @@ def _load_json(path: Path, default: Any = None) -> Any:
         return default if default is not None else {}
 
 
+def _nd() -> Any | None:
+    global _nd_mod
+    if _nd_mod is not None:
+        return _nd_mod
+    if not ND_PATH.is_file():
+        return None
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ammocode_nd", ND_PATH)
+    if not spec or not spec.loader:
+        return None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    _nd_mod = mod
+    return mod
+
+
+def _settings_write_ok(path: Path) -> bool:
+    nd = _nd()
+    if nd and hasattr(nd, "settings_write_allowed"):
+        return bool(nd.settings_write_allowed(path))
+    cfg = settings_dir().resolve()
+    return str(path.expanduser().resolve()).startswith(str(cfg))
+
+
 def _save_json_atomic(path: Path, doc: Any) -> None:
+    if not _settings_write_ok(path):
+        raise PermissionError(f"nondestructive: settings write forbidden: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -319,6 +348,15 @@ def load_settings(*, import_local: dict[str, Any] | None = None) -> dict[str, An
 
 
 def save_settings(patch: dict[str, Any]) -> dict[str, Any]:
+    path = settings_path()
+    if not _settings_write_ok(path):
+        return {
+            "ok": False,
+            "error": "nondestructive_settings_blocked",
+            "detail": "Settings may only write to ~/.config/ammocode — never the bundle",
+            "path": str(path),
+            "nondestructive": True,
+        }
     current = load_settings()
     values = dict(current.get("settings") or {})
     schema = load_schema()
@@ -328,11 +366,14 @@ def save_settings(patch: dict[str, Any]) -> dict[str, Any]:
             continue
         values[key] = _coerce_option(options[key], val)
     doc = build_document(values)
-    _save_json_atomic(settings_path(), doc)
+    try:
+        _save_json_atomic(path, doc)
+    except PermissionError as exc:
+        return {"ok": False, "error": "nondestructive_settings_blocked", "detail": str(exc), "nondestructive": True}
     return {
         "ok": True,
         "settings": values,
-        "path": str(settings_path()),
+        "path": str(path),
         "updated": doc["updated"],
         "signed": True,
     }
@@ -354,6 +395,8 @@ def settings_status() -> dict[str, Any]:
         "settings_version": str(schema.get("settings_version") or "4.9.0"),
         "distribution": _load_json(bundle_root() / "data" / "ammocode-distribution-doctrine.json", {}),
         "replacement_only": True,
+        "nondestructive": True,
+        "settings_write_allowed": _settings_write_ok(settings_path()),
         "package_settings": str(package_settings_path() or ""),
         "package_share": str(package_share_dir() or ""),
     }

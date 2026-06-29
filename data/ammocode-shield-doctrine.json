@@ -23,8 +23,26 @@
     "attach_only_when_running": true,
     "never_harm_os": true
   },
+  "memory_vault": {
+    "doctrine": "data/ammocode-memory-vault-doctrine.json",
+    "runtime_tax": 0,
+    "slots": 4,
+    "leak_policy": "bounded_scrub_on_close",
+    "tamper": "scrub_and_abort"
+  },
+  "nondestructive": {
+    "doctrine": "data/ammocode-nondestructive-doctrine.json",
+    "disk_write_api": false,
+    "save_model": "browser_export_only",
+    "read_jail": ["$HOME", "SG", "AmmoOS", "/tmp"],
+    "run_blocked_inside_self": true,
+    "settings_writes": ["~/.config/ammocode", ".nexus-state/ammocode"],
+    "message": "AmmoCode never destructively writes itself or foreign paths — edit in memory, Export to save"
+  },
   "stack": [
     "ammocode_editor",
+    "ammocode_nondestructive",
+    "memory_vault_4slot",
     "g16_security",
     "ddos_guard",
     "znetwork_field",
