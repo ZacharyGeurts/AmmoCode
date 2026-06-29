@@ -1,236 +1,133 @@
 <!DOCTYPE html>
-<html lang="en" data-ammocode-theme="ammo_emerald">
+<html lang="en" class="ac-nexus-c2 ac-theme-nexus-c2">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AmmoCode 2027 — THE compiler GUI</title>
-  <meta name="description" content="AmmoCode 2027 — hardened security, invite-only collab, voice chat, background combinatorics. Zero telemetry." />
-  <link rel="stylesheet" href="assets/syntax.css" />
-  <link rel="stylesheet" href="assets/themes.css" />
-  <link rel="stylesheet" href="assets/editor.css" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*; media-src 'self' blob:; object-src 'none'; base-uri 'self'" />
+  <title>AmmoCode — NEXUS C2</title>
+  <meta name="description" content="AmmoCode — simple, safe, secure code editor. NEXUS C2 theme · G16 built-in · themeable syntax." />
+  <link rel="stylesheet" href="assets/ammocode-nexus-c2.css" />
+  <link rel="stylesheet" href="assets/ammocode-syntax.css" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:*; img-src 'self' data:; object-src 'none'; base-uri 'self'" />
 </head>
-<body class="ac" data-telemetry="off" data-ac-theme="ammo_emerald">
-  <div class="ac-app">
+<body>
+  <div class="ac-shell">
     <header class="ac-titlebar">
-      <strong>AmmoCode 2027</strong>
-      <span class="ac-tagline">THE compiler GUI</span>
-      <label class="ac-lang-pick" title="Language mode — syntax + g16 profile">
-        Language
-        <select id="ac-lang" aria-label="Programming language"></select>
-      </label>
-      <nav class="ac-menubar" aria-label="Application menu">
-        <details class="ac-menu">
-          <summary>File</summary>
-          <div class="ac-menu-panel">
-            <button type="button" id="ac-open">Open file…</button>
-            <button type="button" id="ac-save">Save</button>
-            <button type="button" id="ac-screenshot">Screenshot…</button>
-            <button type="button" id="ac-new-tab">New tab</button>
-            <div class="ac-menu-sep"></div>
-            <button type="button" id="ac-file-settings-btn">File settings…</button>
-            <input type="file" id="ac-file-input" hidden accept="*/*" />
-          </div>
-        </details>
-        <details class="ac-menu ac-menu-wide" id="ac-file-settings-menu">
-          <summary>Settings</summary>
-          <div class="ac-menu-panel ac-settings-panel">
-            <label>Font size <input type="number" id="ac-set-font" min="10" max="28" value="13" /></label>
-            <label>Tab size <input type="number" id="ac-set-tabsize" min="2" max="8" value="4" /></label>
-            <label class="ac-check"><input type="checkbox" id="ac-set-wrap" /> Word wrap</label>
-            <label class="ac-check"><input type="checkbox" id="ac-set-autodetect" checked /> Autodetect language on open</label>
-            <label class="ac-check"><input type="checkbox" id="ac-set-tab-aging" checked /> Tab age coloring (3h → red)</label>
-            <div class="ac-menu-sep"></div>
-            <label>g16 profile
-              <select id="ac-set-profile">
-                <option value="belt_2_0">belt_2_0</option>
-                <option value="belt_1_0">belt_1_0</option>
-                <option value="field_opt">field_opt</option>
-                <option value="hostess_secure">hostess_secure</option>
-              </select>
-            </label>
-            <label>Theme
-              <select id="ac-set-theme">
-                <option value="ammo_emerald">Ammo Emerald</option>
-                <option value="queen_emerald">Queen Emerald</option>
-                <option value="one_dark">One Dark</option>
-                <option value="dracula">Dracula</option>
-                <option value="nord">Nord</option>
-              </select>
-            </label>
-            <div class="ac-menu-label">Per-file: right-click tab → remember no age color</div>
-          </div>
-        </details>
-        <details class="ac-menu">
-          <summary>Security</summary>
-          <div class="ac-menu-panel">
-            <button type="button" id="ac-sec-scan">Scan vulnerabilities</button>
-            <button type="button" id="ac-sec-rewrite">Harden rewrite</button>
-            <div class="ac-menu-label" id="ac-sec-status">Transparent · hardened · combinatorics-aware</div>
-          </div>
-        </details>
-        <details class="ac-menu">
-          <summary>Run</summary>
-          <div class="ac-menu-panel">
-            <button type="button" id="ac-g16-check">g16 syntax check</button>
-            <button type="button" id="ac-g16-build">g16 Build</button>
-            <label>Profile
-              <select id="ac-profile" class="ac-menu-select">
-                <option value="belt_2_0" selected>belt_2_0 — Grok16 default</option>
-                <option value="belt_1_0">belt_1_0</option>
-                <option value="field_opt">field_opt</option>
-                <option value="hostess_secure">hostess_secure</option>
-              </select>
-            </label>
-          </div>
-        </details>
-        <details class="ac-menu">
-          <summary>View</summary>
-          <div class="ac-menu-panel">
-            <button type="button" id="ac-copy-primer-menu">Copy AI Primer</button>
-            <button type="button" id="ac-reload-primer-menu">Reload AI Primer</button>
-            <button type="button" id="ac-wrap">Toggle word wrap</button>
-            <label>Theme
-              <select id="ac-theme">
-                <option value="ammo_emerald">Ammo Emerald</option>
-                <option value="queen_emerald">Queen Emerald</option>
-                <option value="one_dark">One Dark</option>
-                <option value="dracula">Dracula</option>
-                <option value="nord">Nord</option>
-              </select>
-            </label>
-          </div>
-        </details>
-        <details class="ac-menu ac-menu-wide">
-          <summary>Help</summary>
-          <div class="ac-menu-panel ac-help-panel">
-            <div class="ac-help-title">AmmoCode 2027</div>
-            <p><strong>THE compiler GUI</strong> — sovereign editor on the g16 / Grok16 stack. Zero telemetry. Loopback only.</p>
-            <p><strong>AI Primer</strong> — switch language to load a copy-paste tutorial for your AI. Toolbar copy/paste or tab clipboard icons.</p>
-            <p><strong>Tab aging</strong> — idle tabs warm to red over 3 hours. Right-click a tab to disable color or remember per file.</p>
-            <p><strong>Security</strong> — transparent vuln scan, hardened rewrite, combinatorics-aware blocks before build.</p>
-            <p><strong>Collab</strong> — invite-only WebSocket room, IP friends, voice (mic/volume/mute), cursor personas, text chat.</p>
-            <p><strong>Network mesh</strong> — polite LAN discovery (rate-limited, not spammy). Friend/block lists. Automated threat ratings. HTTP tunnel connects local + open peers when WebSocket is blocked.</p>
-            <p><strong>Host evaluation</strong> — on open, AmmoCode scores this machine using connection gatekeeper + ZNetwork hostile scan + local heuristics.</p>
-            <p><strong>ZNetwork</strong> — NewLatest field secure network hooks through when AmmoCode opens. If ZNetwork is already running, AmmoCode attaches only (no interference). Hook depth: editor → g16 security → DDoS guard → ZNetwork field bridges.</p>
-            <p><strong>Shield</strong> — no screen capture or keyloggers unless host permits collab GUI share. <strong>File → Screenshot…</strong> always available. MITM beacon pins block tunnel hijacks.</p>
-            <p><strong>Defield</strong> — if AmmoCode or SG/Grok16 is fielded, auto-defield on boot (no field-on-field).</p>
-            <p><strong>Distribution</strong> — single secured executable; replace file only to upgrade. Settings live in a signed external file that auto-migrates when options change.</p>
-            <p><strong>Run</strong> — g16 syntax check and build with belt profiles. Activity bar flyouts for collab, security, combinatorics, ZNetwork.</p>
-            <div class="ac-menu-label">Shortcuts: Ctrl+S save · Esc close flyout</div>
-          </div>
-        </details>
-        <details class="ac-menu">
-          <summary>Extensions</summary>
-          <div class="ac-menu-panel">
-            <button type="button" id="ac-ext-vscode">Load VS Code extension…</button>
-            <button type="button" id="ac-ext-openvsx">Load Open VSX extension…</button>
-            <div class="ac-menu-label" id="ac-ext-list">No extensions loaded</div>
-          </div>
-        </details>
-      </nav>
-      <span class="pill ok">telemetry: off</span>
-      <span class="pill ok" id="ac-sec-pill" title="Hardened security — invite-only collab">secured</span>
-      <span class="pill" id="ac-collab-pill" title="Invite-only collaboration">collab: off</span>
-      <span class="pill" id="ac-znetwork-pill" title="ZNetwork field shield">znet: —</span>
-      <span class="pill" id="ac-net-pill" title="Host threat score">host: —</span>
-      <span class="pill" id="ac-g16-pill">g16 · belt_2_0</span>
+      <div class="ac-brand">
+        <strong>AmmoCode</strong>
+        <span>NEXUS C2</span>
+      </div>
+      <div class="ac-titlebar-meta">
+        <span id="ac-version" class="ac-pill">v6.0.0</span>
+        <span id="ac-g16-pill" class="ac-pill warn">g16…</span>
+        <span id="ac-ext-count" class="ac-pill">… extensions</span>
+      </div>
     </header>
 
-    <aside class="ac-activity" aria-label="Activity bar">
-      <button type="button" class="ac-act" id="ac-act-collab" title="Collaboration (invite only)">👥</button>
-      <button type="button" class="ac-act" id="ac-act-security" title="Security">🛡</button>
-      <button type="button" class="ac-act" id="ac-act-combinatorics" title="Combinatorics">◇</button>
-      <button type="button" class="ac-act" id="ac-act-network" title="Network mesh">🌐</button>
-      <button type="button" class="ac-act" id="ac-act-znetwork" title="ZNetwork shield">⛨</button>
-      <button type="button" class="ac-act" id="ac-act-files" title="Files">📁</button>
-    </aside>
+    <div class="ac-toolbar-wrap">
+      <nav id="ac-toolbar" class="ac-toolbar" aria-label="Editor toolbar"></nav>
+    </div>
 
-    <aside class="ac-sidebar" id="ac-sidebar" data-open="0" aria-label="Flyout panel">
-      <div class="ac-flyout" id="ac-flyout-collab" hidden></div>
-      <div class="ac-flyout" id="ac-flyout-security" hidden>
-        <div class="ac-side-head">Security</div>
-        <div class="ac-flyout-body">
-          <p class="ac-flyout-desc">MITM beacon pins · session proofs · invite-only collab. DDoS guard on API. Permitted screen share via host grant only.</p>
-          <button type="button" id="ac-fly-sec-scan">Scan now</button>
-          <button type="button" id="ac-fly-sec-rewrite">Harden rewrite</button>
-          <button type="button" id="ac-fly-sec-status">Security status</button>
-          <button type="button" id="ac-fly-defield">Defield AmmoCode + SG</button>
-          <div class="ac-sec-summary" id="ac-sec-summary">—</div>
-          <div class="ac-sec-field" id="ac-sec-field">Field: —</div>
-        </div>
-      </div>
-      <div class="ac-flyout" id="ac-flyout-combinatorics" hidden>
-        <div id="ac-comb-panel"></div>
-      </div>
-      <div class="ac-flyout" id="ac-flyout-network" hidden></div>
-      <div class="ac-flyout" id="ac-flyout-znetwork" hidden></div>
-      <div class="ac-flyout" id="ac-flyout-files" hidden>
-        <div class="ac-side-head">Files</div>
-        <div class="ac-flyout-body ac-tree">
-          <button type="button" id="ac-fly-open">Open file…</button>
-          <button type="button" id="ac-fly-save">Save</button>
-        </div>
-      </div>
-    </aside>
+    <div class="ac-infobar">
+      <span>Language: <strong id="ac-lang">plaintext</strong></span>
+      <span>Profile: <strong id="ac-profile-label">belt_2_0</strong></span>
+      <span class="ac-path" id="ac-path">untitled</span>
+    </div>
 
-    <main class="ac-main">
-      <div class="ac-tab-row">
-        <div class="ac-tab-clip" aria-label="Copy and paste full text">
-          <button type="button" class="ac-clip-btn" id="ac-tab-copy" title="Copy full text" aria-label="Copy full text">
-            <svg class="ac-clip-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.25"/><path d="M4 11V3a1 1 0 0 1 1-1h6" fill="none" stroke="currentColor" stroke-width="1.25"/></svg>
-          </button>
-          <button type="button" class="ac-clip-btn" id="ac-tab-paste" title="Paste full text" aria-label="Paste full text">
-            <svg class="ac-clip-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="2" width="8" height="3" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.25"/><rect x="3" y="5" width="10" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.25"/><path d="M6 8h4M6 10.5h4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
-          </button>
-        </div>
-        <div class="ac-tabs" id="ac-tabs" role="tablist" aria-label="Editor tabs"></div>
-      </div>
-      <div class="ac-toolbar">
-        <button type="button" class="primary" id="ac-save-bar">Save</button>
-        <button type="button" id="ac-g16-bar">g16 check</button>
-        <button type="button" id="ac-build-bar">Build</button>
-        <button type="button" id="ac-collab-bar" title="Open collab flyout">Collab</button>
-        <button type="button" id="ac-copy-primer" title="Copy AI Primer to clipboard" hidden>Copy AI Primer</button>
-        <button type="button" id="ac-reload-primer" title="Reload primer for this language">↻ Primer</button>
-      </div>
+    <div class="ac-main">
       <div class="ac-editor-wrap">
-        <div class="ac-gutter" id="ac-gutter" aria-hidden="true">1</div>
+        <pre class="ac-gutter" id="ac-gutter" aria-hidden="true">1</pre>
         <div class="ac-editor-stack">
-          <pre class="ac-highlight qs-code" id="ac-highlight" aria-hidden="true"></pre>
-          <textarea class="ac-editor" id="ac-editor" spellcheck="false" autocorrect="off" autocapitalize="off" aria-label="Editor"></textarea>
-          <div class="ac-cursor-layer" id="ac-cursor-layer" aria-hidden="true"></div>
+          <pre class="ac-highlight" id="ac-highlight" aria-hidden="true"></pre>
+          <textarea class="ac-editor" id="ac-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="// Open a file or pass ?file=/path on launch"></textarea>
         </div>
       </div>
-    </main>
+
+      <div class="ac-output-wrap">
+        <div class="ac-output-head">
+          <span>Output</span>
+          <button type="button" id="ac-output-clear" class="ac-drawer-close">Clear</button>
+        </div>
+        <pre class="ac-output" id="ac-output"></pre>
+      </div>
+    </div>
 
     <footer class="ac-statusbar">
-      <span><strong id="ac-st-lang">plaintext</strong></span>
-      <span id="ac-st-g16">g16</span>
-      <span id="ac-st-pos">Ln 1, Col 1</span>
-      <span id="ac-st-path">untitled</span>
-      <span id="ac-st-dirty"></span>
-      <span id="ac-st-primer"></span>
-      <span id="ac-st-collab">invite-only</span>
-      <span id="ac-st-znetwork">znet —</span>
+      <span>Simple · safe · secure · loopback only</span>
+      <span id="ac-status-msg">starting…</span>
     </footer>
   </div>
-  <div class="ac-toast" id="ac-toast" hidden></div>
+
+  <input type="file" id="ac-file" hidden accept="*/*" />
+
+  <div id="ac-profile-popover" class="ac-popover" role="dialog" aria-label="Compiler profile">
+    <label>G16 profile
+      <select id="ac-popover-profile">
+        <option value="belt_2_0" selected>belt_2_0</option>
+        <option value="belt_1_0">belt_1_0</option>
+        <option value="field_opt">field_opt</option>
+        <option value="hostess_secure">hostess_secure</option>
+        <option value="vulkan_rtx">vulkan_rtx</option>
+        <option value="ammoos">ammoos</option>
+        <option value="forever">forever</option>
+        <option value="ai">ai</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="ac-drawer-backdrop" class="ac-drawer-backdrop"></div>
+  <aside id="ac-drawer" class="ac-drawer" aria-label="Settings">
+    <div class="ac-drawer-head">
+      <strong>Settings</strong>
+      <button type="button" id="ac-drawer-close" class="ac-drawer-close">Close</button>
+    </div>
+    <div class="ac-drawer-body">
+      <div class="ac-drawer-section">
+        <h3>Editor</h3>
+        <label class="ac-field">Font size
+          <input type="range" id="ac-set-font" min="10" max="28" value="13" />
+        </label>
+        <label class="ac-field">Tab size
+          <input type="number" id="ac-set-tab" min="2" max="8" value="4" />
+        </label>
+        <label class="ac-check"><input type="checkbox" id="ac-set-wrap" /> Word wrap</label>
+        <label class="ac-check"><input type="checkbox" id="ac-set-autodetect" checked /> Autodetect language (g16 discern)</label>
+        <label class="ac-field">Editor theme
+          <select id="ac-set-editor-theme"></select>
+        </label>
+        <label class="ac-field">Syntax colors
+          <select id="ac-set-syntax-theme"></select>
+        </label>
+        <label class="ac-field">G16 profile
+          <select id="ac-set-profile">
+            <option value="belt_2_0" selected>belt_2_0</option>
+            <option value="belt_1_0">belt_1_0</option>
+            <option value="field_opt">field_opt</option>
+            <option value="hostess_secure">hostess_secure</option>
+            <option value="vulkan_rtx">vulkan_rtx</option>
+            <option value="ammoos">ammoos</option>
+          </select>
+        </label>
+      </div>
+      <div class="ac-drawer-section">
+        <h3>Toolbar</h3>
+        <label class="ac-field">Icon size
+          <select id="ac-set-icon-size">
+            <option value="16">16 px</option>
+            <option value="20">20 px</option>
+            <option value="24" selected>24 px</option>
+            <option value="32">32 px</option>
+          </select>
+        </label>
+        <p style="font-size:0.75rem;color:var(--ac-muted);margin:0 0 0.5rem">Enable advanced toolbar icons:</p>
+        <div id="ac-toolbar-checks"></div>
+      </div>
+    </div>
+  </aside>
 
   <script src="lib/highlight.js"></script>
   <script src="lib/g16.js"></script>
-  <script src="lib/ai-primer.js"></script>
-  <script src="lib/screenshot.js"></script>
-  <script src="lib/screenshare.js"></script>
-  <script src="lib/znetwork.js"></script>
-  <script src="lib/network.js"></script>
-  <script src="lib/combinatorics.js"></script>
-  <script src="lib/security.js"></script>
   <script src="lib/settings.js"></script>
-  <script src="lib/flyout.js"></script>
-  <script src="lib/collab.js"></script>
-  <script src="lib/plugins.js"></script>
-  <script src="lib/tabs.js"></script>
-  <script src="lib/editor.js"></script>
+  <script src="lib/ammocode-toolbar.js"></script>
+  <script src="lib/ammocode-app.js"></script>
 </body>
 </html>

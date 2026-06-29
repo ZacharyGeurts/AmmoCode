@@ -53,10 +53,41 @@ def key_path() -> Path:
     return settings_dir() / KEY_FILE
 
 
+def package_share_dir() -> Path | None:
+    raw = os.environ.get("GROK16_ROOT", "").strip()
+    if not raw:
+        sibling = bundle_root().parent / "Grok16"
+        if sibling.is_dir() and (sibling / "bin" / "g16").is_file():
+            raw = str(sibling)
+    if not raw:
+        return None
+    share = Path(raw).expanduser() / "share" / "ammocode"
+    return share if share.is_dir() else None
+
+
+def package_settings_path() -> Path | None:
+    share = package_share_dir()
+    if not share:
+        return None
+    p = share / "ammocode-settings.secure.json"
+    return p if p.is_file() else None
+
+
+def package_key_path() -> Path | None:
+    share = package_share_dir()
+    if not share:
+        return None
+    p = share / "ammocode-settings.package.key"
+    return p if p.is_file() else None
+
+
 def _signing_key() -> bytes:
     kp = key_path()
     if kp.is_file():
         return kp.read_bytes()[:64]
+    pkg_kp = package_key_path()
+    if pkg_kp and pkg_kp.is_file():
+        return pkg_kp.read_bytes()[:64]
     key = secrets.token_bytes(32)
     settings_dir().mkdir(parents=True, exist_ok=True)
     kp.write_bytes(key)
@@ -67,6 +98,57 @@ def _signing_key() -> bytes:
     return key
 
 
+def _verify_with_key(doc: dict[str, Any], key: bytes) -> bool:
+    sig = str(doc.get("signature") or "")
+    if not sig:
+        return False
+    expected = _signature(
+        int(doc.get("schema_version") or 0),
+        doc.get("values") or {},
+        str(doc.get("settings_version") or ""),
+        key=key[:64],
+    )
+    return hmac.compare_digest(sig, expected)
+
+
+def import_package_settings() -> dict[str, Any] | None:
+    """Copy bundled Grok16 package defaults into operator config on first run."""
+    path = settings_path()
+    if path.is_file():
+        return None
+    pkg_path = package_settings_path()
+    if not pkg_path:
+        return None
+    raw = _load_json(pkg_path, {})
+    if raw.get("schema") != "ammocode-settings-secure/v1":
+        return None
+    pkg_key = package_key_path()
+    key = pkg_key.read_bytes()[:64] if pkg_key and pkg_key.is_file() else None
+    if key and not _verify_with_key(raw, key):
+        return None
+    settings_dir().mkdir(parents=True, exist_ok=True)
+    _save_json_atomic(path, raw)
+    kp = key_path()
+    if key and not kp.is_file():
+        kp.write_bytes(key)
+        try:
+            os.chmod(kp, 0o600)
+        except OSError:
+            pass
+    values = dict(raw.get("values") or {})
+    if values.get("grok16Root"):
+        gr = str(values["grok16Root"]).replace("${GROK16_ROOT}", os.environ.get("GROK16_ROOT", ""))
+        if gr and Path(gr).is_dir():
+            os.environ.setdefault("GROK16_ROOT", gr)
+    return {
+        "ok": True,
+        "imported_from_package": True,
+        "path": str(path),
+        "package_path": str(pkg_path),
+        "settings": values,
+    }
+
+
 def load_schema() -> dict[str, Any]:
     return _load_json(SCHEMA_PATH, {"schema_version": 1, "options": {}})
 
@@ -75,9 +157,16 @@ def _canonical_values(values: dict[str, Any]) -> bytes:
     return json.dumps(values, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def _signature(schema_version: int, values: dict[str, Any], settings_version: str) -> str:
+def _signature(
+    schema_version: int,
+    values: dict[str, Any],
+    settings_version: str,
+    *,
+    key: bytes | None = None,
+) -> str:
     payload = f"{schema_version}:{settings_version}:".encode("utf-8") + _canonical_values(values)
-    return hmac.new(_signing_key(), payload, hashlib.sha256).hexdigest()
+    use = key if key is not None else _signing_key()
+    return hmac.new(use[:64], payload, hashlib.sha256).hexdigest()
 
 
 def _verify(doc: dict[str, Any]) -> bool:
@@ -179,6 +268,7 @@ def build_document(values: dict[str, Any], *, meta: dict[str, Any] | None = None
 
 def load_settings(*, import_local: dict[str, Any] | None = None) -> dict[str, Any]:
     """Load secured settings; migrate and rewrite when schema/options change."""
+    import_package_settings()
     path = settings_path()
     schema = load_schema()
     target_sv = int(schema.get("schema_version") or 1)
@@ -264,6 +354,8 @@ def settings_status() -> dict[str, Any]:
         "settings_version": str(schema.get("settings_version") or "4.9.0"),
         "distribution": _load_json(bundle_root() / "data" / "ammocode-distribution-doctrine.json", {}),
         "replacement_only": True,
+        "package_settings": str(package_settings_path() or ""),
+        "package_share": str(package_share_dir() or ""),
     }
 
 
@@ -276,6 +368,12 @@ def editor_settings() -> dict[str, Any]:
         "autodetect": s.get("autodetect"),
         "profile": s.get("profile"),
         "theme": s.get("theme"),
+        "syntaxTheme": s.get("syntaxTheme"),
+        "toolbarEnabled": s.get("toolbarEnabled"),
+        "iconSize": s.get("iconSize"),
+        "showMinimap": s.get("showMinimap"),
+        "showBreadcrumbs": s.get("showBreadcrumbs"),
+        "splitEditor": s.get("splitEditor"),
         "tabAging": s.get("tabAging"),
     }
 

@@ -1,19 +1,21 @@
 {
   "schema": "ammocode-version/v1",
   "product": "AmmoCode",
-  "distro_version": "5.0.0",
-  "upload_version": "4.9.0",
-  "pkgversion": "Grok16-5.0.0",
+  "distro_version": "6.0.0",
+  "upload_version": "6.0.0",
+  "pkgversion": "Grok16-5.0.1",
   "g16_version": "16.2.0",
   "belt_profile": "belt_2_0",
-  "codename": "2027",
+  "codename": "NEXUS C2",
+  "stack": true,
+  "filetypes_db": "NewLatest/data/field-programming-filetypes.json",
+  "extension_count": 243,
   "github": {
-    "tag": "v4.9.0",
-    "upload_note": "GitHub ships v4.9.0 — public distro remains Grok16-5.0.0"
+    "tag": "v6.0.0",
+    "repo": "https://github.com/ZacharyGeurts/AmmoCode"
   },
   "review": {
-    "gate": "final_review",
-    "reviewers_expected": 2,
+    "gate": "stack_integrated",
     "status": "ready"
   }
 }
