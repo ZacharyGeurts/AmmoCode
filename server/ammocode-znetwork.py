@@ -80,6 +80,9 @@ def _env() -> dict[str, str]:
         "NEXUS_ZNETWORK_NO_SUDO": os.environ.get("NEXUS_ZNETWORK_NO_SUDO", "1"),
         "ZNETWORK_NEVER_HARM_OS": os.environ.get("ZNETWORK_NEVER_HARM_OS", "1"),
         "NEXUS_NEVER_HARM_OS": os.environ.get("NEXUS_NEVER_HARM_OS", "1"),
+        "ZNETWORK_SMART_INSIDE": os.environ.get("ZNETWORK_SMART_INSIDE", "1"),
+        "ZNETWORK_RELAYER": os.environ.get("ZNETWORK_RELAYER", "1"),
+        "ZNETWORK_UNDERHOOK": "0",
         "ZNETWORK_MODE": os.environ.get("ZNETWORK_MODE", "REVIEW_ONLY"),
     }
 
@@ -194,9 +197,10 @@ def hook_ammocode() -> dict[str, Any]:
         f'export NEXUS_STATE_DIR="{STATE}"; '
         f'export SG_ROOT="{SG}"; '
         f'export NEXUS_ZNETWORK=1 NEXUS_ZNETWORK_NO_SUDO=1; '
+        f'export ZNETWORK_RELAYER=1 ZNETWORK_UNDERHOOK=0 ZNETWORK_SMART_INSIDE=1 ZNETWORK_TAKEOVER=0; '
         f'export ZNETWORK_NEVER_HARM_OS=1 NEXUS_NEVER_HARM_OS=1; '
         f'source "{FIELD_SH}"; '
-        f'nexus_znetwork_startup_with_us'
+        f'nexus_znetwork_relayer_py relay 2>/dev/null || nexus_znetwork_startup_with_us'
     )
     try:
         proc = subprocess.run(

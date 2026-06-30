@@ -12,12 +12,19 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SG = ROOT.parent
-GROK16 = Path(os.environ.get("GROK16_ROOT", SG / "Grok16"))
+_SG_PATHS_LIB = Path(__file__).resolve().parents[2] / "lib"
+if str(_SG_PATHS_LIB) not in sys.path:
+    sys.path.insert(0, str(_SG_PATHS_LIB))
+from sg_paths import grok16_root
+
+GROK16 = grok16_root()
 NEWLATEST = Path(os.environ.get("NEXUS_INSTALL_ROOT", SG / "NewLatest"))
 STATE = Path(os.environ.get("NEXUS_STATE_DIR", NEWLATEST / ".nexus-state"))
 
 DEFIELD_MARKER = STATE / "ammocode-defield.marker"
 DEFIELD_JSON = STATE / "ammocode-defield.json"
+PERMANENT_MARKER = STATE / "permanent-field.marker"
+PERMANENT_SG_MARKER = SG / ".nexus-state" / "permanent-field.marker"
 FIELD_RUNTIME = STATE / "field-combinatorics-runtime.json"
 ZNET_MARKER = STATE / "znetwork-running.marker"
 ZNET_SOCK = STATE / "znetwork-field.sock"
@@ -38,7 +45,13 @@ def _save_json(path: Path, doc: Any) -> None:
     tmp.replace(path)
 
 
+def is_permanent_fielded() -> bool:
+    return PERMANENT_MARKER.is_file() or PERMANENT_SG_MARKER.is_file()
+
+
 def is_defielded() -> bool:
+    if is_permanent_fielded():
+        return False
     return DEFIELD_MARKER.is_file()
 
 
@@ -72,8 +85,23 @@ def _defield_posture(*, reason: str = "defield_active") -> dict[str, Any]:
     }
 
 
+def _permanent_field_posture() -> dict[str, Any]:
+    return {
+        "posture": "field",
+        "field": True,
+        "no_subfields": True,
+        "permanent": True,
+        "resting_on_field": False,
+        "defield_active": False,
+        "reason": "permanent_field_power_chain",
+        "scope": ["SG", "SG/NewLatest"],
+    }
+
+
 def ammocode_posture(surface: str = "plain") -> dict[str, Any]:
-    """Effective AmmoCode runtime posture — defield marker wins over instill field."""
+    """Effective AmmoCode runtime posture — permanent field wins; defield marker next."""
+    if is_permanent_fielded():
+        return _permanent_field_posture()
     if is_defielded():
         return _defield_posture()
     pos = _grok16_posture(surface)
@@ -148,7 +176,7 @@ def sg_field_status() -> dict[str, Any]:
 
 
 def defield_sg(*, reason: str = "operator_request", force: bool = False) -> dict[str, Any]:
-    """Defield SG/Grok16 and AmmoCode runtime — stop field-on-field until cleared."""
+    """Defield NewLatest/Grok16 and AmmoCode runtime — stop field-on-field until cleared."""
     before = sg_field_status()
     needs = before.get("fielded") or before.get("ammocode_fielded")
     if not force and not needs and before.get("defield_active"):
@@ -200,6 +228,31 @@ def defield_sg(*, reason: str = "operator_request", force: bool = False) -> dict
         "after": after,
         "receipt": doc,
     }
+
+
+def field_sg(*, reason: str = "operator_request") -> dict[str, Any]:
+    """Enable permanent SG/NewLatest fielding from power input forward."""
+    mod = NEWLATEST / "lib" / "field-permanent-fielding.py"
+    if not mod.is_file():
+        return {"ok": False, "error": "field-permanent-fielding.py missing"}
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(mod), "install"],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            env={
+                **os.environ,
+                "NEXUS_INSTALL_ROOT": str(NEWLATEST),
+                "NEXUS_STATE_DIR": str(STATE),
+                "SG_ROOT": str(SG),
+            },
+        )
+        if proc.stdout.strip():
+            return json.loads(proc.stdout)
+        return {"ok": False, "error": (proc.stderr or "install_failed")[:400]}
+    except (subprocess.SubprocessError, json.JSONDecodeError, OSError) as exc:
+        return {"ok": False, "error": str(exc)}
 
 
 def clear_defield() -> dict[str, Any]:

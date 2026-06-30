@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export SG_ROOT="${SG_ROOT:-$(dirname "$ROOT")}"
 export NEXUS_INSTALL_ROOT="${NEXUS_INSTALL_ROOT:-$SG_ROOT/AmmoOS}"
-export GROK16_ROOT="${GROK16_ROOT:-$SG_ROOT/Grok16}"
+export GROK16_ROOT="${GROK16_ROOT:-$ROOT/Grok16}"
 PORT="${AMMOCODE_PORT:-19555}"
 export AMMOCODE_PORT="$PORT"
 

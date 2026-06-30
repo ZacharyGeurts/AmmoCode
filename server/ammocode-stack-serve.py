@@ -26,7 +26,12 @@ def _resolve_nexus() -> Path:
 
 
 NEXUS = _resolve_nexus()
-GROK16 = Path(os.environ.get("GROK16_ROOT", SG / "Grok16"))
+_SG_PATHS_LIB = Path(__file__).resolve().parents[2] / "lib"
+if str(_SG_PATHS_LIB) not in sys.path:
+    sys.path.insert(0, str(_SG_PATHS_LIB))
+from sg_paths import grok16_root
+
+GROK16 = grok16_root()
 PORT = int(os.environ.get("AMMOCODE_PORT", "9555"))
 FILETYPES = NEXUS / "lib" / "field-programming-filetypes.py"
 PROFILE = os.environ.get("G16_BENCH_PROFILE", "belt_2_0")
@@ -34,6 +39,7 @@ PROFILE = os.environ.get("G16_BENCH_PROFILE", "belt_2_0")
 _uni: Any | None = None
 _ft: Any | None = None
 _nd: Any | None = None
+_ic_api: Any | None = None
 
 
 def _import_py(path: Path, name: str) -> Any | None:
@@ -67,6 +73,19 @@ def nondestructive() -> Any | None:
     if _nd is None:
         _nd = _import_py(ND, "ammocode_nd")
     return _nd
+
+
+def ironclad_api() -> Any | None:
+    global _ic_api
+    if _ic_api is None:
+        for cand in (
+            NEXUS / "lib" / "ironclad-secure-api.py",
+            SG / "NewLatest" / "lib" / "ironclad-secure-api.py",
+        ):
+            _ic_api = _import_py(cand, "ironclad_secure_api")
+            if _ic_api:
+                break
+    return _ic_api
 
 
 def _json(handler: SimpleHTTPRequestHandler, code: int, doc: dict) -> None:
@@ -170,6 +189,19 @@ class Handler(SimpleHTTPRequestHandler):
         except json.JSONDecodeError:
             _json(self, 400, {"ok": False, "error": "invalid_json"})
             return
+
+        ic = ironclad_api()
+        if ic and hasattr(ic, "gate_request"):
+            peer = self.client_address[0] if self.client_address else ""
+            try:
+                verdict = ic.gate_request(
+                    peer=str(peer), path=self.path.split("?", 1)[0], method="POST", body=body,
+                )
+                if not verdict.get("ok"):
+                    _json(self, int(verdict.get("code") or 403), verdict)
+                    return
+            except Exception:
+                pass
 
         action = str(body.get("action") or "").lower()
         nd = nondestructive()

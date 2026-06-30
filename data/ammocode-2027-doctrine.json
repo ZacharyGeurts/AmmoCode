@@ -25,9 +25,17 @@
     "http_tunnel": true,
     "polite_discovery": true
   },
+  "memory_vault": {
+    "enabled": true,
+    "doctrine": "data/ammocode-memory-vault-doctrine.json",
+    "runtime_tax": 0,
+    "no_leak": true,
+    "four_slot_codec": true
+  },
   "security": {
     "hardened_rewrite": true,
     "combinatorics_rewrite": true,
+    "memory_vault": true,
     "ddos_guard": true,
     "rate_limit_per_minute": 120,
     "max_body_bytes": 524288,

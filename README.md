@@ -59,7 +59,7 @@ Settings: `~/.config/ammocode/ammocode-settings.secure.json`
 | Component | Version |
 |-----------|---------|
 | Grok16 | 5.1.0 · `g16` @ 16.2.0 |
-| AmmoOS | 2.0.0-beta3 |
+| AmmoOS | 2.0.0-beta4 |
 | Filetypes | `NewLatest/data/field-programming-filetypes.json` |
 
 ## License

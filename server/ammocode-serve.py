@@ -27,6 +27,7 @@ _network_mod: Any | None = None
 _security_mod: Any | None = None
 _field_mod: Any | None = None
 _settings_mod: Any | None = None
+_vault_mod: Any | None = None
 _VERSION_CACHE: dict[str, Any] | None = None
 
 
@@ -90,6 +91,10 @@ def _field_control() -> Any | None:
 
 def _settings() -> Any | None:
     return _load_server_module("_settings_mod", "ammocode_settings", "ammocode-settings.py")
+
+
+def _memory_vault() -> Any | None:
+    return _load_server_module("_vault_mod", "ammocode_memory_vault", "ammocode-memory-vault.py")
 
 
 def _start_znetwork_hook() -> None:
@@ -374,6 +379,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "frozen": is_frozen(),
                 "replacement_only": True,
                 "distribution": _load_json(ROOT / "data" / "ammocode-distribution-doctrine.json", {}),
+                "memory_vault": (_memory_vault().vault_status() if _memory_vault() and hasattr(_memory_vault(), "vault_status") else {"ok": False}),
             })
             return
 
@@ -753,6 +759,14 @@ class Handler(SimpleHTTPRequestHandler):
             _json(self, 200, {"ok": True, "message": "write — local editor only in browser tab mode", "language": lang})
             return
 
+        if action.startswith("vault_") or action.startswith("memory_"):
+            vault = _memory_vault()
+            if vault and hasattr(vault, "handle_api"):
+                _json(self, 200, vault.handle_api(action, body))
+                return
+            _json(self, 200, {"ok": False, "error": "memory_vault_unavailable"})
+            return
+
         _json(self, 400, {"ok": False, "error": "unknown_action", "actions": [
             "ping", "discern", "security_scan", "insta_rewrite", "harden_rewrite",
             "g16_check", "g16_build", "field_posture", "defield_sg", "sg_field_status",
@@ -763,6 +777,7 @@ class Handler(SimpleHTTPRequestHandler):
             "tunnel_register", "tunnel_poll", "tunnel_send", "tunnel_deliver", "tunnel_connect",
             "network_friend_add", "network_block_add",
             "settings_load", "settings_save", "settings_status",
+            "vault_status", "vault_encode", "vault_decode", "vault_store", "vault_fetch", "vault_release", "vault_scrub",
         ]})
 
     def log_message(self, fmt: str, *args) -> None:

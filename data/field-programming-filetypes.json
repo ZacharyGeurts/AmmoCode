@@ -5,7 +5,7 @@
   "canonical": "NewLatest/data/field-programming-filetypes.json",
   "motto": "Discern \u2192 Run g16 \u00b7 Compile \u00b7 Open AmmoCode \u2014 every extension known",
   "pairing": {
-    "grok16": "5.0.1",
+    "grok16": "5.1.0",
     "ammocode": "6.0.0",
     "amouranthrtx": "field-die"
   },
