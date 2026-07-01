@@ -58,7 +58,7 @@ Settings: `~/.config/ammocode/ammocode-settings.secure.json`
 
 | Component | Version |
 |-----------|---------|
-| Grok16 | 5.3.0 · `g16` @ 16.2.0 · [AmmoCode field instill](https://github.com/ZacharyGeurts/Grok16/blob/main/data/g16-ammocode-field-doctrine.json) |
+| Grok16 | 5.3.1 · `g16` @ 16.2.0 · [own GitHub](https://github.com/ZacharyGeurts/Grok16) · [field instill](https://github.com/ZacharyGeurts/Grok16/blob/main/data/g16-ammocode-field-doctrine.json) |
 | AmmoOS | 2.0.0-beta4 |
 | Filetypes | `NewLatest/data/field-programming-filetypes.json` |
 
