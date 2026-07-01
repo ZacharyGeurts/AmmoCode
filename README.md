@@ -58,9 +58,11 @@ Settings: `~/.config/ammocode/ammocode-settings.secure.json`
 
 | Component | Version |
 |-----------|---------|
-| Grok16 | 5.1.0 · `g16` @ 16.2.0 |
+| Grok16 | 5.3.0 · `g16` @ 16.2.0 · [AmmoCode field instill](https://github.com/ZacharyGeurts/Grok16/blob/main/data/g16-ammocode-field-doctrine.json) |
 | AmmoOS | 2.0.0-beta4 |
 | Filetypes | `NewLatest/data/field-programming-filetypes.json` |
+
+Boot: NewLatest runs **Grok16 common runtime** (~400MB) at start. Interactive hosts get a **10s Y/N** prompt to clone **full Grok16** from GitHub for 79+ languages. AmmoCode uses `GROK16_ROOT` (full `SG/Grok16` or common `SG/Grok16-common`).
 
 ## License
 

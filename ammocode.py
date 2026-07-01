@@ -11,9 +11,27 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 SG = os.environ.get("SG_ROOT", os.path.dirname(ROOT))
 os.environ.setdefault("SG_ROOT", SG)
 os.environ.setdefault("NEXUS_INSTALL_ROOT", os.environ.get("NEXUS_INSTALL_ROOT", os.path.join(SG, "AmmoOS")))
-_nl = os.path.join(SG, "NewLatest")
-_default_g16 = os.path.join(_nl, "Grok16") if os.path.isdir(os.path.join(_nl, "Grok16")) else os.path.join(SG, "NewLatest", "Grok16")
-os.environ.setdefault("GROK16_ROOT", os.environ.get("GROK16_ROOT", _default_g16))
+
+
+def _resolve_grok16_root() -> str:
+    env = os.environ.get("GROK16_ROOT", "").strip()
+    if env and os.path.isdir(env):
+        return env
+    nl = os.path.join(SG, "NewLatest")
+    for candidate in (
+        os.path.join(SG, "Grok16"),
+        os.path.join(SG, "Grok16-common"),
+        os.path.join(nl, "Grok16"),
+    ):
+        if os.path.isdir(candidate):
+            g16 = os.path.join(candidate, "bin", "g16")
+            gpy = os.path.join(candidate, "bin", "gpy-16")
+            if os.path.isfile(g16) or os.path.isfile(gpy) or os.path.isdir(os.path.join(candidate, "forge")):
+                return candidate
+    return os.path.join(nl, "Grok16")
+
+
+os.environ.setdefault("GROK16_ROOT", _resolve_grok16_root())
 
 SERVER = os.path.join(ROOT, "server")
 STACK = os.path.join(SERVER, "ammocode-stack-serve.py")
