@@ -1,16 +1,35 @@
 {
   "name": "ammocode",
-  "version": "4.9.0",
-  "description": "AmmoCode 2027 — THE compiler GUI. Hardened security, invite-only collab, voice, combinatorics.",
-  "private": true,
+  "version": "6.1.0",
+  "description": "AmmoCode NEXUS C2 — lean sovereign code editor. 268 text-era extensions · g16 discern · GitHub Pages static · Grok16 paired.",
+  "private": false,
+  "homepage": "https://zacharygeurts.github.io/AmmoCode/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ZacharyGeurts/AmmoCode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ZacharyGeurts/AmmoCode/issues"
+  },
   "scripts": {
     "start": "python3 server/ammocode-serve.py",
     "serve": "python3 server/ammocode-serve.py",
     "executable": "python3 ammocode.py",
     "build": "bash scripts/build-executable.sh",
-    "collab": "python3 server/ammocode-collab.py",
-    "invite": "python3 server/ammocode-collab.py --invite"
+    "pages": "bash scripts/publish-pages-static.sh"
   },
-  "keywords": ["ammocode", "g16", "grok16", "editor", "syntax-highlight"],
-  "license": "GPL-3.0-or-later"
+  "keywords": [
+    "ammocode",
+    "g16",
+    "grok16",
+    "editor",
+    "syntax-highlight",
+    "nexus-c2",
+    "field",
+    "github-pages"
+  ],
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": ">=18"
+  }
 }

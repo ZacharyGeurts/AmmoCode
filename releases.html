@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AmmoCode · Releases</title>
+  <meta name="description" content="AmmoCode releases — version, Grok16 pairing, checksums." />
+  <link rel="stylesheet" href="assets/ammocode-nexus-c2.css" />
+  <style>
+    body.ac-releases { max-width: 52rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+    body.ac-releases h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+    body.ac-releases .sub { color: var(--ac-muted, #8fa896); margin: 0 0 1.25rem; }
+    body.ac-releases table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    body.ac-releases th, body.ac-releases td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid rgba(255,255,255,.08); }
+    body.ac-releases code { font-size: .82rem; }
+    body.ac-releases .nav a { margin-right: .75rem; color: var(--ac-sky, #5eb8ff); }
+    body.ac-releases .card { background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 1rem 1.1rem; margin: 1rem 0; }
+  </style>
+</head>
+<body class="ac-releases ac-theme-nexus-c2">
+  <nav class="nav">
+    <a href="./">Editor</a>
+    <a href="docs.html">Docs</a>
+    <a href="https://github.com/ZacharyGeurts/AmmoCode/wiki">Wiki</a>
+    <a href="https://github.com/ZacharyGeurts/AmmoCode/releases">GitHub Releases</a>
+    <a href="https://github.com/ZacharyGeurts/AmmoCode">Repository</a>
+  </nav>
+  <h1>AmmoCode releases</h1>
+  <p class="sub">Best editor tree · GitHub Pages static · Grok16 compiler pairing</p>
+
+  <div class="card">
+    <h2 id="current">Current · <span id="ver">6.1.0</span></h2>
+    <table>
+      <tr><th>Product</th><td>AmmoCode NEXUS C2</td></tr>
+      <tr><th>Version</th><td id="ver2">6.1.0</td></tr>
+      <tr><th>Codename</th><td id="code">NEXUS C2</td></tr>
+      <tr><th>Grok16 pairing</th><td id="g16">16.2.0 / Field 16.1.0-hard</td></tr>
+      <tr><th>Extensions</th><td id="ext">268</td></tr>
+      <tr><th>Tag</th><td><code id="tag">v6.1.0</code></td></tr>
+      <tr><th>Live Pages</th><td><a href="./">zacharygeurts.github.io/AmmoCode</a></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Best version policy</h2>
+    <p>When both <strong>SG / AmmoOS/AmmoCode</strong> and <strong>Grok16</strong> are present:</p>
+    <ul>
+      <li><strong>Editor &amp; Pages UI</strong> → AmmoCode <code>6.1.0</code> (this tree)</li>
+      <li><strong>Compile / g16 / g++16</strong> → Grok16 hard plane (<code>16.1.0-hard</code>+)</li>
+      <li>Pages mode never requires Python — pure static HTML/JS</li>
+      <li>Loopback <code>ammocode.py</code> is optional for local g16 run/build only</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Checksums</h2>
+    <p class="sub">Filled at publish time when <code>scripts/publish-pages-static.sh</code> runs.</p>
+    <pre id="sums" style="overflow:auto;font-size:.78rem">See GitHub Release assets or run:
+sha256sum index.html lib/*.js data/ammocode-version.json</pre>
+  </div>
+
+  <script>
+    fetch("data/ammocode-version.json", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        const v = j.version || j.distro_version || "6.1.0";
+        document.getElementById("ver").textContent = v;
+        document.getElementById("ver2").textContent = v;
+        if (j.codename) document.getElementById("code").textContent = j.codename;
+        if (j.g16_version) document.getElementById("g16").textContent = j.g16_version;
+        if (j.extension_count) document.getElementById("ext").textContent = j.extension_count;
+        if (j.github && j.github.tag) document.getElementById("tag").textContent = j.github.tag;
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>
