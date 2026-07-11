@@ -1,0 +1,27 @@
+{
+  "schema": "ammocode-g16-pair/v1",
+  "title": "AmmoCode ↔ Grok16 bidirectional wire",
+  "ammocode": {
+    "version": "6.2.0",
+    "role": "full_compiler_suite_and_editor",
+    "repo": "https://github.com/ZacharyGeurts/AmmoCode",
+    "pages": "https://zacharygeurts.github.io/AmmoCode/"
+  },
+  "grok16": {
+    "version": "16.1.0-hard",
+    "role": "field_hard_compiler_plane",
+    "repo": "https://github.com/ZacharyGeurts/Grok16",
+    "pages": "https://zacharygeurts.github.io/Grok16/",
+    "bin": ["g16", "g++16", "field-ammolang", "field-compile-truth"]
+  },
+  "wire": {
+    "ammocode_uses_g16": true,
+    "g16_uses_ammocode_editor": true,
+    "discern": true,
+    "check_build_run": true,
+    "language_suite": "data/ammocode-language-suite.json",
+    "default_profile": "belt_2_0",
+    "field_profile": "field_opt"
+  },
+  "motto": "AmmoCode is the suite · Grok16 is the hard plane · one stack"
+}

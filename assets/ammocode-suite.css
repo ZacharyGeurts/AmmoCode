@@ -1,0 +1,105 @@
+/* AmmoCode 6.2 language suite bar — popular + A–Z */
+.ac-langbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  padding: 0.45rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    90deg,
+    rgba(12, 28, 22, 0.95),
+    rgba(8, 14, 20, 0.92)
+  );
+}
+.ac-langbar-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ac-muted, #8fa896);
+  font-weight: 700;
+}
+.ac-lang-select {
+  min-width: 12.5rem;
+  max-width: 22rem;
+  flex: 1 1 12rem;
+  padding: 0.38rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(94, 184, 255, 0.35);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--ac-text, #e8f5ea);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.ac-lang-select:focus {
+  outline: 2px solid rgba(61, 214, 140, 0.55);
+  outline-offset: 1px;
+}
+.ac-lang-sort {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+.ac-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--ac-muted, #8fa896);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.ac-sort-btn:hover {
+  border-color: rgba(94, 184, 255, 0.45);
+  color: var(--ac-text, #e8f5ea);
+}
+.ac-sort-btn.active,
+.ac-sort-btn[aria-pressed="true"] {
+  border-color: rgba(61, 214, 140, 0.55);
+  color: #3dd68c;
+  background: rgba(61, 214, 140, 0.1);
+}
+.ac-sort-ico {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.ac-langbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--ac-muted, #8fa896);
+}
+.ac-langbar-meta .ac-path {
+  max-width: 28rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ac-sky, #5eb8ff);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+}
+.ac-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+@media (max-width: 720px) {
+  .ac-langbar-meta {
+    margin-left: 0;
+    width: 100%;
+  }
+  .ac-lang-select {
+    max-width: none;
+  }
+}

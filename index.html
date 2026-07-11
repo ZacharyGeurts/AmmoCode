@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AmmoCode — NEXUS C2</title>
-  <meta name="description" content="AmmoCode — lean code editor. Opens any text-era file · 268 extensions · g16 discern · NEXUS C2 theme." />
+  <title>AmmoCode — Full Compiler Suite · Grok16</title>
+  <meta name="description" content="AmmoCode 6.2 — full compiler suite + code editor for 2026. BASIC · QBasic · Python · C++ · g16 · popular + A–Z language sort." />
   <link rel="stylesheet" href="assets/ammocode-nexus-c2.css" />
   <link rel="stylesheet" href="assets/ammocode-syntax.css" />
+  <link rel="stylesheet" href="assets/ammocode-suite.css" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:* https://api.github.com https://raw.githubusercontent.com; img-src 'self' data:; object-src 'none'; base-uri 'self'" />
 </head>
 <body>
@@ -14,14 +15,15 @@
     <header class="ac-titlebar">
       <div class="ac-brand">
         <strong>AmmoCode</strong>
-        <span>NEXUS C2</span>
+        <span>Suite · Grok16</span>
       </div>
       <div class="ac-titlebar-meta">
-        <span id="ac-version" class="ac-pill">v6.1.0</span>
+        <span id="ac-version" class="ac-pill">v6.2.0</span>
         <span id="ac-g16-pill" class="ac-pill warn">g16…</span>
         <span id="ac-ext-count" class="ac-pill">268 extensions</span>
         <a class="ac-pill" href="docs.html" title="Docs hub">docs</a>
         <a class="ac-pill" href="releases.html" title="Releases">releases</a>
+        <a class="ac-pill" href="https://github.com/ZacharyGeurts/Grok16" title="Grok16 hard plane" target="_blank" rel="noopener">Grok16</a>
         <a class="ac-pill" href="https://github.com/ZacharyGeurts/AmmoCode/wiki" title="Wiki" target="_blank" rel="noopener">wiki</a>
       </div>
     </header>
@@ -30,10 +32,24 @@
       <nav id="ac-toolbar" class="ac-toolbar" aria-label="Editor toolbar"></nav>
     </div>
 
-    <div class="ac-infobar">
-      <span>Language: <strong id="ac-lang">plaintext</strong></span>
-      <span>Profile: <strong id="ac-profile-label">belt_2_0</strong></span>
-      <span class="ac-path" id="ac-path">untitled</span>
+    <div class="ac-langbar" role="region" aria-label="Language suite">
+      <label class="ac-langbar-label" for="ac-lang-select">Language</label>
+      <select id="ac-lang-select" class="ac-lang-select" title="Pick language — BASIC, QBasic, Python, C++, …"></select>
+      <div class="ac-lang-sort" role="group" aria-label="Language sort">
+        <button type="button" id="ac-lang-sort-popular" class="ac-sort-btn active" title="Sort by most popular first" aria-pressed="true">
+          <span class="ac-sort-ico" aria-hidden="true">★</span>
+          <span class="ac-sort-txt">Popular</span>
+        </button>
+        <button type="button" id="ac-lang-sort-az" class="ac-sort-btn" title="Alphabetize A–Z" aria-pressed="false">
+          <span class="ac-sort-ico" aria-hidden="true">A–Z</span>
+          <span class="ac-sort-txt">Alpha</span>
+        </button>
+      </div>
+      <span class="ac-langbar-meta">
+        <span>Profile: <strong id="ac-profile-label">belt_2_0</strong></span>
+        <span class="ac-path" id="ac-path">untitled</span>
+      </span>
+      <span id="ac-lang" class="ac-sr-only">plaintext</span>
     </div>
 
     <div class="ac-main">
@@ -131,6 +147,7 @@
 
   <script src="lib/pages-static.js"></script>
   <script src="lib/highlight.js"></script>
+  <script src="lib/language-suite.js"></script>
   <script src="lib/compile-alerts.js"></script>
   <script src="lib/g16.js"></script>
   <script src="lib/settings.js"></script>

@@ -1,19 +1,27 @@
 {
   "schema": "ammocode-version/v1",
   "product": "AmmoCode",
-  "version": "6.1.0",
-  "distro_version": "6.1.0",
-  "upload_version": "6.1.0",
+  "version": "6.2.0",
+  "distro_version": "6.2.0",
+  "upload_version": "6.2.0",
   "pkgversion": "Grok16-16.1.0-hard",
-  "g16_version": "16.2.0",
+  "g16_version": "16.1.0-hard",
   "g16_field_hard": "16.1.0-hard",
   "belt_profile": "belt_2_0",
-  "codename": "NEXUS C2",
+  "codename": "NEXUS C2 Suite",
+  "role": "full_compiler_suite_and_editor",
   "stack": true,
-  "best_version_policy": "AmmoCode 6.1 editor + Grok16 hard for compile; Pages is static JS only",
+  "best_version_policy": "AmmoCode 6.2 suite editor + Grok16 16.1.0-hard compile plane",
+  "language_suite": "data/ammocode-language-suite.json",
+  "language_sorts": ["popular", "az"],
   "filetypes_db": "data/field-programming-filetypes.json",
   "extension_count": 268,
   "text_eras": true,
+  "pair": {
+    "grok16": "https://github.com/ZacharyGeurts/Grok16",
+    "ammocode": "https://github.com/ZacharyGeurts/AmmoCode",
+    "bidirectional": true
+  },
   "pages": {
     "url": "https://zacharygeurts.github.io/AmmoCode/",
     "docs": "https://zacharygeurts.github.io/AmmoCode/docs.html",
@@ -22,13 +30,13 @@
     "python_required": false
   },
   "github": {
-    "tag": "v6.1.0",
+    "tag": "v6.2.0",
     "repo": "https://github.com/ZacharyGeurts/AmmoCode",
     "wiki": "https://github.com/ZacharyGeurts/AmmoCode/wiki"
   },
   "review": {
-    "gate": "stack_integrated",
+    "gate": "suite_g16_wired",
     "status": "ready",
-    "best_tree": "AmmoOS/AmmoCode + Grok16 hard plane"
+    "best_tree": "AmmoCode suite + Grok16 hard plane"
   }
 }
