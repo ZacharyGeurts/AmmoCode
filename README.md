@@ -1,96 +1,38 @@
-# AmmoCode 6.1 — NEXUS C2 Stack Editor
+# AmmoCode 6.2 — Full Compiler Suite + Editor
 
-**Live editor (GitHub Pages):** https://zacharygeurts.github.io/AmmoCode/  
-**Wiki:** https://github.com/ZacharyGeurts/AmmoCode/wiki  
-**Releases / SHA:** https://zacharygeurts.github.io/AmmoCode/releases.html  
-**Issues:** https://github.com/ZacharyGeurts/AmmoCode/issues
+**Live:** https://zacharygeurts.github.io/AmmoCode/  
+**Grok16 hard plane:** https://github.com/ZacharyGeurts/Grok16 · `v16.1.0-hard`  
+**Wiki:** https://github.com/ZacharyGeurts/AmmoCode/wiki
 
-Lean sovereign code editor — opens **any text-era file**, 268 extensions, **g16 discern**, zero telemetry, non-destructive export.
+AmmoCode is the **full compiler suite and code editor** for 2026+ — wired bidirectionally with **Grok16**.
 
-Paired with **Grok16** (compiler plane in Field / AmmoOS stack).
+## Language suite
 
-| Surface | Best source |
-|---------|-------------|
-| Editor UI + Pages | **this repo** · AmmoCode **6.1.0** |
-| Compiler / g16 / g++16 | **Grok16** · `16.1.0-hard`+ (Field stack) |
-| Full OS install | [AmmoOS](https://github.com/ZacharyGeurts/AmmoOS) |
+- Dropdown: **Python, JS/TS, C/C++, Rust, Go, Java…** plus **BASIC, QBasic, QuickBASIC, FreeBASIC, VBA, Pascal, Fortran, COBOL…**
+- **★ Popular** — most-used languages first  
+- **A–Z** — alphabetize  
+- `?lang=qbasic` deep-link works on Pages
 
-## Quick start
+## Grok16 wire
 
-### Browser (no install)
-
-Open the live Pages editor:
-
-https://zacharygeurts.github.io/AmmoCode/
-
-- Open a file from disk (browser picker)
-- Syntax highlight · themes · export download
-- **Non-destructive** — never writes your disk; export only
-
-### Local loopback (g16 run/compile)
+| Mode | Behavior |
+|------|----------|
+| Pages | Full suite UI · highlight · export · no local compile |
+| Loopback | `g16` check / build / run · profiles per language |
 
 ```bash
 git clone https://github.com/ZacharyGeurts/AmmoCode.git
 cd AmmoCode
-# optional: pair Grok16 from Field / AmmoOS stack so g16 is on PATH
-python3 ammocode.py
-# → http://127.0.0.1:9555/
-./scripts/ammocode-open.sh /path/to/file.txt
+# put Grok16 hard on PATH (NewLatest/Grok16/bin or this stack)
+python3 ammocode.py   # http://127.0.0.1:9555/
 ```
 
-For a full stack install (AmmoOS + Grok16 + Hostess7):
+Pair: `data/ammocode-g16-pair.json` · suite: `data/ammocode-language-suite.json`
 
-```bash
-git clone https://github.com/ZacharyGeurts/AmmoOS.git
-cd AmmoOS && git checkout v2.0.0-beta6   # or latest release
-./scripts/wire-stack.sh
-```
+## Features
 
-## Text-era open
+- Non-destructive export · 268 text-era extensions  
+- g16 discern · NEXUS C2 themes · F5/F6/F7 check/build/run  
+- Field / AmmoLang / Hostess secure profiles  
 
-Canonical **268-extension** DB (`data/field-programming-filetypes.json`):
-
-| Era | Examples | Encoding |
-|-----|----------|----------|
-| Modern | `.ts`, `.py`, `.rs`, `.md`, `.cpp` | UTF-8 |
-| DOS / BBS | `CONFIG.SYS`, `.nfo`, `.ans` | CP437 / Latin-1 |
-| Legacy | `.bas`, `.f90`, `.cob`, `.pas` | Latin-1 ladder |
-| Plain | `.txt`, `.log`, `.lst` | Auto-detect |
-
-Binary guard rejects `.exe`, images, archives — unless the extension is in the programming DB.
-
-## Non-destructive
-
-| Rule | Behavior |
-|------|----------|
-| Disk API | Read-only in Pages mode |
-| Save | **Export** (browser download) |
-| Run/compile | Loopback + g16 when local server is up |
-| Settings | `localStorage` on Pages · secure store when loopback |
-
-Doctrine: `data/ammocode-nondestructive-doctrine.json`
-
-## GitHub Pages
-
-Static editor — no server required:
-
-| URL | Role |
-|-----|------|
-| [/](https://zacharygeurts.github.io/AmmoCode/) | Live editor |
-| [/releases.html](https://zacharygeurts.github.io/AmmoCode/releases.html) | Version · checksums |
-| [/docs.html](https://zacharygeurts.github.io/AmmoCode/docs.html) | Docs hub → wiki |
-
-Query `?pages=1` forces static mode on any host.
-
-## Version
-
-See `data/ammocode-version.json`:
-
-- **AmmoCode** `6.1.0` · codename NEXUS C2  
-- **Grok16** pairing `16.2.0` / Field hard plane `16.1.0-hard`  
-- Tag: `v6.1.0`
-
-## License
-
-© 2025–2026 Zachary Robert Geurts · see stack license / Hostess7 license tree.
-GPL-3.0-or-later for package metadata; operational Field surfaces may carry additional doctrine.
+**Version:** 6.2.0 · tag `v6.2.0`
