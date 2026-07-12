@@ -29,10 +29,24 @@ python3 ammocode.py   # http://127.0.0.1:9555/
 
 Pair: `data/ammocode-g16-pair.json` · suite: `data/ammocode-language-suite.json`
 
+## Run tab (Pages = local)
+
+**Editor | Run** switcher. **F7** sends the buffer into a **sandboxed** iframe (`allow-scripts` only · no parent DOM · no network).
+
+| Language on github.io | Behavior |
+|----------------------|----------|
+| JavaScript / TypeScript | Sandbox run |
+| HTML | Sandbox document |
+| BASIC / QBasic / FreeBASIC / VBA | Built-in interpreter |
+| C / C++ / Rust / Go / Python | Needs Grok16 hard (clone + loopback) |
+
+Same UI and run path on https://zacharygeurts.github.io/AmmoCode/ and local loopback.
+
 ## Features
 
 - Non-destructive export · 268 text-era extensions  
-- g16 discern · NEXUS C2 themes · F5/F6/F7 check/build/run  
+- Language suite · ★ Popular + A–Z  
+- g16 discern · NEXUS C2 themes · F5/F6/F7  
 - Field / AmmoLang / Hostess secure profiles  
 
 **Version:** 6.2.0 · tag `v6.2.0`
