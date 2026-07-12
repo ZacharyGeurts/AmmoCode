@@ -103,3 +103,87 @@
     max-width: none;
   }
 }
+
+/* View switcher · Editor | Run */
+.ac-view-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-right: 0.35rem;
+}
+.ac-view-btn {
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--ac-muted, #8fa896);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ac-view-btn.active,
+.ac-view-btn[aria-selected="true"] {
+  color: #3dd68c;
+  border-color: rgba(61, 214, 140, 0.5);
+  background: rgba(61, 214, 140, 0.12);
+}
+.ac-dim {
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ac-main.hidden,
+.ac-run-dock.hidden {
+  display: none !important;
+}
+
+/* Run dock — full panel under titlebar */
+.ac-run-dock {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: #050807;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ac-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.ac-run-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.4);
+}
+.ac-run-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #3dd68c;
+  margin-right: auto;
+}
+.ac-run-tool {
+  padding: 0.28rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--ac-text, #e8f5ea);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.ac-run-tool:hover {
+  border-color: rgba(94, 184, 255, 0.45);
+}
+.ac-run-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 60vh;
+  border: 0;
+  background: #000;
+}

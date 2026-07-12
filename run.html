@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AmmoCode · Run (sandbox)</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'" />
+  <style>
+    :root {
+      --bg: #070b0a;
+      --panel: #0c1412;
+      --line: #1e332c;
+      --text: #e8f5ea;
+      --muted: #8fa896;
+      --ok: #3dd68c;
+      --warn: #f0d060;
+      --err: #ff6b4a;
+      --sky: #5eb8ff;
+      --mono: ui-monospace, Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%;
+      background: var(--bg); color: var(--text);
+      font-family: system-ui, "Segoe UI", sans-serif;
+    }
+    .shell {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100%;
+    }
+    header {
+      display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+      padding: .55rem .75rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(0,0,0,.35);
+    }
+    header strong { color: var(--ok); letter-spacing: .04em; }
+    .pill {
+      font-family: var(--mono); font-size: .68rem;
+      padding: .2rem .45rem; border-radius: 999px;
+      border: 1px solid var(--line); color: var(--muted);
+    }
+    .pill.ok { color: var(--ok); border-color: rgba(61,214,140,.4); }
+    .pill.warn { color: var(--warn); border-color: rgba(240,208,96,.4); }
+    .pill.err { color: var(--err); border-color: rgba(255,107,74,.45); }
+    main {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+      min-height: 0;
+    }
+    @media (min-width: 900px) {
+      main { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+    }
+    .pane {
+      display: flex; flex-direction: column; min-height: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    @media (min-width: 900px) {
+      .pane { border-bottom: 0; border-right: 1px solid var(--line); }
+      .pane:last-child { border-right: 0; }
+    }
+    .pane-h {
+      padding: .4rem .65rem; font-size: .72rem; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    #stage {
+      flex: 1; min-height: 0; overflow: auto;
+      background: #000; position: relative;
+    }
+    #stage iframe {
+      width: 100%; height: 100%; border: 0; background: #fff;
+    }
+    #console {
+      flex: 1; min-height: 0; margin: 0; padding: .65rem .75rem;
+      overflow: auto; white-space: pre-wrap; word-break: break-word;
+      font-family: var(--mono); font-size: .8rem; line-height: 1.45;
+      background: #050807; color: #c8e6d0;
+    }
+    #console .err { color: var(--err); }
+    #console .sys { color: var(--sky); }
+    #console .ok { color: var(--ok); }
+    footer {
+      padding: .4rem .75rem; font-size: .72rem; color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+    .waiting {
+      display: grid; place-items: center; height: 100%;
+      color: var(--muted); font-size: .9rem; padding: 1rem; text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <strong>RUN · SANDBOX</strong>
+      <span class="pill ok" id="sandPill">sandboxed</span>
+      <span class="pill" id="langPill">—</span>
+      <span class="pill" id="namePill">waiting</span>
+      <span class="pill warn" id="statusPill">idle</span>
+    </header>
+    <main>
+      <section class="pane">
+        <div class="pane-h">Program stage</div>
+        <div id="stage">
+          <div class="waiting" id="waitMsg">Waiting for AmmoCode to send a program…</div>
+        </div>
+      </section>
+      <section class="pane">
+        <div class="pane-h">Console</div>
+        <pre id="console"></pre>
+      </section>
+    </main>
+    <footer>
+      Isolated iframe · no parent DOM · no network · stop closes the run.
+      Parent editor stays on the Editor tab.
+    </footer>
+  </div>
+  <script>
+(function () {
+  "use strict";
+  var consoleEl = document.getElementById("console");
+  var stage = document.getElementById("stage");
+  var langPill = document.getElementById("langPill");
+  var namePill = document.getElementById("namePill");
+  var statusPill = document.getElementById("statusPill");
+  var waitMsg = document.getElementById("waitMsg");
+  var allowedOrigin = null;
+  var stopFlag = false;
+
+  function log(msg, cls) {
+    var line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = String(msg);
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  function clearAll() {
+    consoleEl.textContent = "";
+    stage.innerHTML = "";
+    stopFlag = false;
+  }
+
+  function setStatus(s, cls) {
+    statusPill.textContent = s;
+    statusPill.className = "pill " + (cls || "");
+  }
+
+  function reply(type, payload) {
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          Object.assign({ source: "ammocode-run-sandbox", type: type }, payload || {}),
+          allowedOrigin || "*"
+        );
+      }
+    } catch (_) {}
+  }
+
+  /** Minimal BASIC / QBasic interpreter (subset) */
+  function runBasic(src) {
+    var lines = String(src || "").replace(/\r/g, "").split("\n");
+    var program = [];
+    var labels = Object.create(null);
+    for (var i = 0; i < lines.length; i++) {
+      var raw = lines[i];
+      var m = raw.match(/^\s*(\d+)\s*(.*)$/);
+      var num = m ? parseInt(m[1], 10) : i + 1;
+      var body = (m ? m[2] : raw).replace(/^\s+|\s+$/g, "");
+      if (!body || body.charAt(0) === "'") continue;
+      labels[num] = program.length;
+      program.push({ num: num, body: body, srcLine: i + 1 });
+    }
+    var vars = Object.create(null);
+    var pc = 0;
+    var out = [];
+    var steps = 0;
+    var maxSteps = 100000;
+
+    function evalExpr(expr) {
+      expr = String(expr).replace(/^\s+|\s+$/g, "");
+      // string literal
+      var sm = expr.match(/^"(.*)"$/);
+      if (sm) return sm[1];
+      // variable
+      if (/^[A-Za-z][A-Za-z0-9_]*\$?$/.test(expr)) {
+        var key = expr.toUpperCase();
+        return vars[key] != null ? vars[key] : 0;
+      }
+      // numeric with vars substituted
+      var e = expr.replace(/[A-Za-z][A-Za-z0-9_]*\$?/g, function (name) {
+        var v = vars[name.toUpperCase()];
+        if (typeof v === "string") return JSON.stringify(v);
+        return v != null ? v : 0;
+      });
+      if (!/^[\d\s+\-*/%().,]+$/.test(e.replace(/"/g, ""))) {
+        // allow quotes already handled
+        if (/[A-Za-z_]/.test(e)) throw new Error("bad expression: " + expr);
+      }
+      // eslint-disable-next-line no-new-func
+      return Function('"use strict"; return (' + e + ");")();
+    }
+
+    while (pc < program.length && steps++ < maxSteps) {
+      if (stopFlag) {
+        log("[stopped]", "sys");
+        break;
+      }
+      var line = program[pc];
+      var b = line.body;
+      var u = b.toUpperCase();
+      try {
+        if (u.indexOf("PRINT ") === 0 || u === "PRINT" || u.indexOf("?") === 0) {
+          var rest = u.charAt(0) === "?" ? b.slice(1) : b.slice(5);
+          rest = rest.replace(/^\s+/, "");
+          if (!rest) {
+            log("");
+          } else {
+            // semicolon/comma split loosely
+            var parts = rest.split(/([;,])/);
+            var row = "";
+            for (var p = 0; p < parts.length; p++) {
+              var tok = parts[p];
+              if (tok === ";" || tok === ",") continue;
+              if (!tok.replace(/^\s+|\s+$/g, "")) continue;
+              var val = evalExpr(tok.replace(/^\s+|\s+$/g, ""));
+              row += val;
+              if (parts[p + 1] === ",") row += "\t";
+            }
+            log(row);
+            out.push(row);
+          }
+          pc++;
+        } else if (u.indexOf("LET ") === 0 || /^[A-Za-z].*=/.test(b)) {
+          var assign = u.indexOf("LET ") === 0 ? b.slice(4) : b;
+          var eq = assign.indexOf("=");
+          if (eq < 0) throw new Error("LET needs =");
+          var vn = assign.slice(0, eq).replace(/^\s+|\s+$/g, "").toUpperCase();
+          var ve = assign.slice(eq + 1);
+          vars[vn] = evalExpr(ve);
+          pc++;
+        } else if (u.indexOf("GOTO ") === 0) {
+          var g = parseInt(b.slice(5), 10);
+          if (labels[g] == null) throw new Error("GOTO unknown " + g);
+          pc = labels[g];
+        } else if (u.indexOf("IF ") === 0) {
+          var thenIdx = u.indexOf(" THEN ");
+          if (thenIdx < 0) throw new Error("IF needs THEN");
+          var cond = b.slice(3, thenIdx);
+          var thenPart = b.slice(thenIdx + 6).replace(/^\s+/, "");
+          // cond: A = B / A > B etc
+          var cm = cond.match(/^(.+?)(<=|>=|<>|=|<|>)(.+)$/);
+          var okc = false;
+          if (cm) {
+            var L = evalExpr(cm[1]);
+            var R = evalExpr(cm[3]);
+            var op = cm[2];
+            if (op === "=") okc = L == R;
+            else if (op === "<>") okc = L != R;
+            else if (op === "<") okc = L < R;
+            else if (op === ">") okc = L > R;
+            else if (op === "<=") okc = L <= R;
+            else if (op === ">=") okc = L >= R;
+          }
+          if (okc) {
+            if (/^\d+$/.test(thenPart)) {
+              var tn = parseInt(thenPart, 10);
+              if (labels[tn] == null) throw new Error("THEN line missing");
+              pc = labels[tn];
+            } else {
+              // inline statement
+              program.splice(pc + 1, 0, { num: line.num, body: thenPart, srcLine: line.srcLine });
+              // reindex labels loosely — only for simple runs
+              pc++;
+            }
+          } else pc++;
+        } else if (u.indexOf("FOR ") === 0) {
+          // FOR I = 1 TO 10
+          var fm = b.match(/^FOR\s+([A-Za-z][A-Za-z0-9_]*)\s*=\s*(.+?)\s+TO\s+(.+?)(?:\s+STEP\s+(.+))?$/i);
+          if (!fm) throw new Error("bad FOR");
+          var fv = fm[1].toUpperCase();
+          var fstart = Number(evalExpr(fm[2]));
+          var fend = Number(evalExpr(fm[3]));
+          var fstep = fm[4] != null ? Number(evalExpr(fm[4])) : 1;
+          vars[fv] = fstart;
+          vars["__FOR_" + fv] = { end: fend, step: fstep, top: pc };
+          pc++;
+        } else if (u.indexOf("NEXT") === 0) {
+          var nv = b.replace(/^NEXT\s*/i, "").replace(/^\s+|\s+$/g, "");
+          var nk = nv ? nv.toUpperCase() : null;
+          if (!nk) {
+            // find last for
+            for (var k in vars) {
+              if (k.indexOf("__FOR_") === 0) nk = k.slice(6);
+            }
+          }
+          var meta = vars["__FOR_" + nk];
+          if (!meta) throw new Error("NEXT without FOR");
+          vars[nk] = Number(vars[nk]) + meta.step;
+          var cont = meta.step >= 0 ? vars[nk] <= meta.end : vars[nk] >= meta.end;
+          if (cont) pc = meta.top + 1;
+          else {
+            delete vars["__FOR_" + nk];
+            pc++;
+          }
+        } else if (u === "END" || u === "STOP" || u === "SYSTEM") {
+          break;
+        } else if (u.indexOf("REM") === 0) {
+          pc++;
+        } else if (u.indexOf("CLS") === 0) {
+          consoleEl.textContent = "";
+          pc++;
+        } else if (u.indexOf("INPUT ") === 0) {
+          var iv = b.slice(6).replace(/^\s+|\s+$/g, "").replace(/["']/g, "");
+          var partsIn = iv.split(",");
+          var vname = partsIn[partsIn.length - 1].replace(/^\s+|\s+$/g, "").toUpperCase();
+          var prompt = partsIn.length > 1 ? partsIn.slice(0, -1).join(",") : vname + "? ";
+          log(String(prompt).replace(/^"|"$/g, "") + "(sandbox default 0)", "sys");
+          vars[vname] = 0;
+          pc++;
+        } else {
+          throw new Error("unsupported: " + b);
+        }
+      } catch (err) {
+        log("Error at " + line.num + ": " + err.message, "err");
+        setStatus("error", "err");
+        reply("run_error", { message: String(err.message), line: line.num });
+        return;
+      }
+    }
+    if (steps >= maxSteps) log("[max steps — stopped]", "sys");
+    log("[BASIC done]", "ok");
+    setStatus("done", "ok");
+    reply("run_done", { language: "basic", lines: out.length });
+  }
+
+  function runJavaScript(src, name) {
+    // Nested sandbox iframe for JS (double isolation)
+    var iframe = document.createElement("iframe");
+    iframe.setAttribute(
+      "sandbox",
+      "allow-scripts"
+    ); // no allow-same-origin → opaque origin
+    iframe.title = "JS sandbox";
+    stage.innerHTML = "";
+    stage.appendChild(iframe);
+    var html =
+      "<!doctype html><html><head><meta charset=utf-8>" +
+      "<style>body{font:14px/1.4 system-ui;margin:12px;background:#111;color:#e8f5ea}" +
+      "pre{white-space:pre-wrap}</style></head><body>" +
+      "<pre id=o></pre><script>(function(){\n" +
+      "var o=document.getElementById('o');\n" +
+      "function put(x,c){var d=document.createElement('div');if(c)d.style.color=c;d.textContent=String(x);o.appendChild(d);try{parent.postMessage({source:'ammocode-js-inner',type:'log',msg:String(x)},'*');}catch(e){}}\n" +
+      "var console={log:function(){put([].slice.call(arguments).join(' '),'#3dd68c');}," +
+      "error:function(){put([].slice.call(arguments).join(' '),'#ff6b4a');}," +
+      "warn:function(){put([].slice.call(arguments).join(' '),'#f0d060');}};\n" +
+      "try{\n" +
+      src.replace(/<\/script/gi, "<\\\\/script") +
+      "\n}catch(e){console.error(e&&e.message||e); parent.postMessage({source:'ammocode-js-inner',type:'error',msg:String(e&&e.message||e)},'*');}\n" +
+      "parent.postMessage({source:'ammocode-js-inner',type:'done'},'*');\n" +
+      "})();<\/script></body></html>";
+    iframe.srcdoc = html;
+    log("[js sandbox started] " + (name || "program"), "sys");
+    setStatus("running", "warn");
+  }
+
+  function runHtml(src, name) {
+    var iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", "allow-scripts");
+    iframe.title = "HTML sandbox";
+    stage.innerHTML = "";
+    stage.appendChild(iframe);
+    iframe.srcdoc = src;
+    log("[html sandbox] " + (name || "document"), "sys");
+    setStatus("running", "warn");
+    reply("run_done", { language: "html" });
+  }
+
+  function runProgram(msg) {
+    clearAll();
+    var lang = String(msg.language || "plaintext").toLowerCase();
+    var code = String(msg.code || "");
+    var name = msg.name || "program";
+    langPill.textContent = lang;
+    namePill.textContent = name;
+    log("[sandbox] language=" + lang + " bytes=" + code.length, "sys");
+    setStatus("running", "warn");
+
+    if (lang === "javascript" || lang === "js" || lang === "typescript") {
+      var js = code;
+      if (lang === "typescript") {
+        // strip very light TS-only syntax for demo runs
+        js = js
+          .replace(/:\s*[A-Za-z0-9_<>\[\]\|\&\s]+(?=[,)=])/g, "")
+          .replace(/\bas\s+[A-Za-z0-9_<>]+/g, "")
+          .replace(/\binterface\b[\s\S]*?\{[\s\S]*?\}/g, "")
+          .replace(/\btype\s+[A-Za-z0-9_]+\s*=\s*[^;]+;/g, "");
+        log("[typescript] light strip for sandbox run", "sys");
+      }
+      runJavaScript(js, name);
+      return;
+    }
+    if (lang === "html" || lang === "htm") {
+      runHtml(code, name);
+      return;
+    }
+    if (
+      lang === "basic" ||
+      lang === "qbasic" ||
+      lang === "quickbasic" ||
+      lang === "freebasic" ||
+      lang === "vba" ||
+      lang === "visual_basic"
+    ) {
+      stage.innerHTML = '<div class="waiting">BASIC console output →</div>';
+      runBasic(code);
+      return;
+    }
+    if (lang === "python" || lang === "py") {
+      log("Python needs Grok16 loopback (g16) for full run.", "sys");
+      log("On GitHub Pages, use JavaScript / HTML / BASIC for sandboxed run.", "sys");
+      log("Clone + Grok16 hard: https://github.com/ZacharyGeurts/Grok16", "sys");
+      setStatus("needs g16", "warn");
+      reply("run_needs_g16", { language: lang });
+      return;
+    }
+    if (lang === "c" || lang === "cxx" || lang === "cpp" || lang === "rust" || lang === "go") {
+      log(lang + " compile/run needs Grok16 hard plane (field_opt).", "sys");
+      log("Pages sandbox runs JS / HTML / BASIC natively.", "sys");
+      setStatus("needs g16", "warn");
+      reply("run_needs_g16", { language: lang });
+      return;
+    }
+    // default: treat as text log
+    stage.innerHTML = '<div class="waiting">No native sandbox for ' + lang + "</div>";
+    log(code.slice(0, 4000));
+    setStatus("preview", "warn");
+    reply("run_done", { language: lang, preview: true });
+  }
+
+  window.addEventListener("message", function (ev) {
+    var d = ev.data;
+    if (!d || typeof d !== "object") return;
+    if (d.source === "ammocode-js-inner") {
+      if (d.type === "log") log(d.msg);
+      if (d.type === "error") {
+        log(d.msg, "err");
+        setStatus("error", "err");
+      }
+      if (d.type === "done") {
+        setStatus("done", "ok");
+        reply("run_done", { language: "javascript" });
+      }
+      return;
+    }
+    if (d.source !== "ammocode-editor") return;
+    // lock to first parent origin
+    if (!allowedOrigin) allowedOrigin = ev.origin || "*";
+    if (d.type === "run") runProgram(d);
+    if (d.type === "stop") {
+      stopFlag = true;
+      stage.innerHTML = '<div class="waiting">Stopped</div>';
+      setStatus("stopped", "warn");
+      log("[stop]", "sys");
+    }
+    if (d.type === "ping") {
+      reply("pong", { sandbox: true });
+    }
+  });
+
+  log("AmmoCode run sandbox ready · waiting for program", "sys");
+  reply("ready", { sandbox: true });
+})();
+  </script>
+</body>
+</html>
